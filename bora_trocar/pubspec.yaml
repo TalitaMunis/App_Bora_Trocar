@@ -1,0 +1,36 @@
+name: bora_trocar
+description: "A new Flutter project."
+publish_to: 'none' # Remove esta linha se quiser publicar no pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.1.1
+
+  # Pacotes externos
+  cupertino_icons: ^1.0.8
+  url_launcher: ^6.3.1   # pacote para abrir links externos
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Exemplo de assets (descomente se usar)
+  # assets:
+  #   - images/
+  
+  # Exemplo de fontes (descomente se usar)
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
