@@ -1,31 +1,69 @@
-// Este é um placeholder para seu modelo de dados (RF01)
-// Vamos começar a construí-lo.
+// Arquivo: lib/models/food_listing.dart
+
+// Modelo para representar um anúncio de alimento
 class FoodListing {
   final String id;
-  final String title;
+  final String title; // Mantido como 'title'
+  final String? imageUrl; // Adicionado para futura implementação de imagem de rede
+  final String statusProximidadeVencimento;
+  
+  // CAMPOS ADICIONADOS:
+  final DateTime expiryDate; // <--- CAMPO QUE FALTAVA (DateTime)
   final String description;
-  final String category;
-  final DateTime expiryDate; // Data de validade
-  final String quantity; // ex: "2kg" ou "5 unidades"
-  final String imageUrl;
-  final String contactInfo;
-  final String location; // Simplificado por enquanto
-  final String userId; // ID do dono do anúncio
+  final String contactInfo; // Contato para o WhatsApp
 
   FoodListing({
     required this.id,
     required this.title,
-    required this.description,
-    required this.category,
+    this.imageUrl, // Torna opcional no construtor
+    required this.statusProximidadeVencimento,
+    // Novos campos
     required this.expiryDate,
-    required this.quantity,
-    required this.imageUrl,
+    required this.description,
     required this.contactInfo,
-    required this.location,
-    required this.userId,
   });
-
-  // No futuro, adicionaremos métodos aqui:
-  // - fromJson(Map<String, dynamic> json) para ler do Firebase
-  // - toJson() para escrever no Firebase
 }
+
+// Lista de Mock de Anúncios para preencher a tela
+final List<FoodListing> mockListings = [
+  FoodListing(
+    id: '1',  
+    title: 'Pão Integral', 
+    imageUrl: null, 
+    statusProximidadeVencimento: 'Vence amanhã',
+    // Dados de Detalhe Mockados
+    expiryDate: DateTime.now().add(const Duration(days: 1)),
+    description: 'Pão de forma integral, pacote lacrado. Ideal para sanduíches saudáveis ou torradas. Pego 2 pacotes por engano.',
+    contactInfo: '5511987654321', // Exemplo de número de WhatsApp (código do país + DDD + número)
+  ),
+  FoodListing(
+    id: '2',  
+    title: 'Leite Desnatado', 
+    imageUrl: null,  
+    statusProximidadeVencimento: 'Vence hoje',
+    // Dados de Detalhe Mockados
+    expiryDate: DateTime.now(),
+    description: 'Caixa de Leite Desnatado. Validade expira hoje, mas está lacrada e refrigerada.',
+    contactInfo: '5511987654321', 
+  ),
+  FoodListing(
+    id: '3',  
+    title: 'Pão Integral', 
+    imageUrl: null,  
+    statusProximidadeVencimento: '500m de você',
+    // Dados de Detalhe Mockados
+    expiryDate: DateTime.now().add(const Duration(days: 5)),
+    description: 'Metade de um pacote de pão integral, aberto ontem, guardado em pote hermético. Está em perfeito estado!',
+    contactInfo: '5511987654321',
+  ),
+  FoodListing(
+    id: '4',  
+    title: 'Pêra', 
+    imageUrl: null,  
+    statusProximidadeVencimento: '1.2km de você',
+    // Dados de Detalhe Mockados
+    expiryDate: DateTime.now().add(const Duration(days: 3)),
+    description: 'Três pêras maduras, frescas. Não consigo comer todas a tempo.',
+    contactInfo: '5511987654321',
+  ),
+];

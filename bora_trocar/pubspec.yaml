@@ -10,11 +10,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  shared_preferences: ^2.1.1
-
+  # ✅ Pacote INTl ADICIONADO para formatação de data na NewAdPage
+  intl: ^0.18.1 
+  
+  shared_preferences: ^2.1.0  # Adicionando o número de patch
+  
   # Pacotes externos
   cupertino_icons: ^1.0.8
-  url_launcher: ^6.3.1   # pacote para abrir links externos
+  url_launcher: ^6.3.1  # pacote para abrir links externos
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +34,4 @@ flutter:
   # Exemplo de fontes (descomente se usar)
   # fonts:
   #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
+  #   # ...

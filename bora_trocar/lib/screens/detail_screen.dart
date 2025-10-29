@@ -47,11 +47,39 @@ class DetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // CORREÇÃO: Usamos listing.imageUrl ?? '' para garantir que seja sempre String.
             Image.network(
-              listing.imageUrl,
+              // Se imageUrl for nulo, passamos uma string vazia ('')
+              listing.imageUrl ?? '', 
               height: 250,
               width: double.infinity,
               fit: BoxFit.cover,
+              // O loadingBuilder é crucial aqui para evitar erros se o URL for ''
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  height: 250,
+                  color: Colors.grey[200], // Placeholder enquanto carrega ou se URL for vazia
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                // Se der erro (incluindo URL vazia), mostra um placeholder simples
+                return Container(
+                  height: 250,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
             Text(listing.title, style: theme.textTheme.headlineSmall),
@@ -64,9 +92,11 @@ class DetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            Text(listing.description),
+            // Nota: Se listing.description for String?, também precisaria do ?? '' aqui.
+            Text(listing.description), 
             const SizedBox(height: 20),
             ElevatedButton.icon(
+              // Nota: Se listing.contactInfo for String?, também precisaria do ?? '' aqui.
               onPressed: () => _launchWhatsApp(context, listing.contactInfo),
               icon: const Icon(Icons.chat),
               label: const Text('Entrar em contato via WhatsApp'),
