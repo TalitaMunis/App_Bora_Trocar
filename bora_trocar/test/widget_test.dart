@@ -70,9 +70,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // Lista de títulos para o AppBar
   static const List<String> _titles = <String>[
     'Bora Trocar!', // Home
-    'Buscar', // Buscar
-    'Anunciar', // Anunciar
-    'Meus Anúncios', // Meus
+    'Anúncios', // Meus
     'Perfil', // Perfil
   ];
 
@@ -82,7 +80,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     HomePage(), // features/home_feed/view/home_feed_screen.dart
     SearchPage(), // features/search/view/search_screen.dart
     NewAdPage(), // features/ad_management/view/ad_form_screen.dart
-    MyAdsPage(), // features/ad_management/view/my_ads_screen.dart
+    AdsPage(), // features/ad_management/view/my_ads_screen.dart
     ProfilePage(), // features/profile/view/profile_screen.dart
   ];
 
@@ -139,7 +137,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           NavigationDestination(
             selectedIcon: Icon(Icons.list_alt),
             icon: Icon(Icons.list_alt_outlined),
-            label: 'Meus',
+            label: 'Anúncios',
           ),
           // Tab 5: Perfil
           NavigationDestination(
@@ -199,13 +197,13 @@ class NewAdPage extends StatelessWidget {
 }
 
 // Tela Meus Anúncios (RF03, RF04) - (image_ffb118.jpg)
-class MyAdsPage extends StatelessWidget {
-  const MyAdsPage({super.key});
+class AdsPage extends StatelessWidget {
+  const AdsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     // Aqui entraria a lista de anúncios do usuário
-    return const Center(child: Text('Tela "Meus Anúncios" (RF03, RF04)'));
+    return const Center(child: Text('Tela "Anúncios" (RF03, RF04)'));
   }
 }
 

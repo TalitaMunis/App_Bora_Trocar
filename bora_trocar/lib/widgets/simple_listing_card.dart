@@ -5,8 +5,10 @@ import '../theme/app_theme.dart'; // Importa seu arquivo de tema
 // O nome da classe deve ser SimpleListingCard para ser coerente com o nome do arquivo
 class SimpleListingCard extends StatelessWidget {
   final FoodListing listing;
+  final VoidCallback? onTap; // ✅ O callback está aqui
   
-  const SimpleListingCard({super.key, required this.listing});
+  const SimpleListingCard({super.key, required this.listing, this.onTap,});
+  
 
   Widget _buildStatusChip(String status) {
     Color chipColor;

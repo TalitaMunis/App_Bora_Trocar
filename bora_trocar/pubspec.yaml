@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   # ✅ Pacote INTl ADICIONADO para formatação de data na NewAdPage
   intl: ^0.18.1 
+
+  provider: ^6.0.0
   
   shared_preferences: ^2.1.0  # Adicionando o número de patch
   

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-// Importa o modelo e a lista de dados mockados
-import '../models/food_listing.dart'; 
-// Importa o widget do card
+import 'package:provider/provider.dart'; // ✅ Importar Provider
+// Importa o serviço que contém os dados
+import '../services/ads_service.dart'; 
+// Importa o widget do card (que renderiza cada item)
 import '../widgets/simple_listing_card.dart'; 
 // Importa o tema para estilização da barra de busca
 import '../theme/app_theme.dart'; 
+// Importa a tela de detalhes (para navegação futura)
+import 'detail_screen.dart'; 
 
 // Esta é a tela Home (Feed de Anúncios)
 class HomePage extends StatelessWidget {
@@ -16,14 +19,13 @@ class HomePage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // --- 1. Campo de Busca (Implementado diretamente no body) ---
+        // --- 1. Campo de Busca ---
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(10.0),
-              // Usa a cor do divisor que definimos no AppTheme
               border: Border.all(color: AppTheme.dividerColor), 
             ),
             child: const TextField(
@@ -38,20 +40,41 @@ class HomePage extends StatelessWidget {
           ),
         ),
 
-        // --- 2. Feed de Anúncios (ListView) ---
+        // --- 2. Feed de Anúncios (ListView Reativo) ---
         Expanded(
-          child: ListView.builder(
-            itemCount: mockListings.length,
-            itemBuilder: (context, index) {
-              final listing = mockListings[index];
-              return SimpleListingCard(
-                listing: listing,
-                // Implementação futura da navegação:
-                // onTap: () {
-                //   Navigator.of(context).push(MaterialPageRoute(
-                //     builder: (ctx) => DetailScreen(listing: listing),
-                //   ));
-                // },
+          // ✅ Consumer escuta as mudanças no AdsService
+          child: Consumer<AdsService>(
+            builder: (context, adsService, child) {
+              final listings = adsService.listings; // A lista completa de anúncios
+              
+              if (listings.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'Nenhum anúncio disponível no momento.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+              
+              return ListView.builder(
+                itemCount: listings.length,
+                itemBuilder: (context, index) {
+                  final listing = listings[index];
+                  return SimpleListingCard(
+                    listing: listing,
+                   onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (ctx) => DetailScreen(
+                            listing: listing,
+                            isUserOwner: false, // O dono é 'false' no feed geral
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               );
             },
           ),

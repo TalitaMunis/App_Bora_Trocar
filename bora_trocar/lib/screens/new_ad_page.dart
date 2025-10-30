@@ -1,37 +1,77 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Necessário para formatar a data
-import '../theme/app_theme.dart'; // Para cores consistentes
+import 'package:intl/intl.dart'; 
+import 'package:provider/provider.dart'; 
+import '../theme/app_theme.dart'; 
+import '../services/ads_service.dart'; 
+import '../models/food_listing.dart'; 
 
 class NewAdPage extends StatefulWidget {
-  const NewAdPage({super.key});
+  // ✅ Construtor adaptado para receber um anúncio para edição
+  final FoodListing? listingToEdit;
+
+  const NewAdPage({super.key, this.listingToEdit});
 
   @override
   State<NewAdPage> createState() => _NewAdPageState();
 }
 
 class _NewAdPageState extends State<NewAdPage> {
-  // Chave global para validação do formulário
   final _formKey = GlobalKey<FormState>();
 
-  // Variáveis de estado para simular os dados do formulário
+  // Controllers para preencher e gerenciar os TextFields
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _quantityController;
+
+  // Variáveis de estado
   String _title = '';
   String? _description;
   String? _category;
   DateTime? _expiryDate;
   String _quantity = '';
-
+  
   // Opções de categorias mockadas
   final List<String> _categories = const [
-    'Grãos e Cereais',
-    'Laticínios',
-    'Frutas e Vegetais',
-    'Pães e Massas',
-    'Carnes e Proteínas',
-    'Outros'
+    'Grãos e Cereais', 'Laticínios', 'Frutas e Vegetais', 
+    'Pães e Massas', 'Carnes e Proteínas', 'Outros'
   ];
 
-  // Função para abrir o seletor de data
+  @override
+  void initState() {
+    super.initState();
+    final isEditing = widget.listingToEdit != null;
+    final listing = widget.listingToEdit;
+    
+    // Define os valores iniciais, ou String vazia/null se for Criação
+    final initialDescription = isEditing ? listing!.description : '';
+    final initialQuantityMock = isEditing ? listing!.contactInfo : ''; 
+    final initialCategoryMock = isEditing ? _categories[1] : null; // Mock para categoria: 'Laticínios'
+
+    // ✅ Inicializa controllers
+    _titleController = TextEditingController(text: isEditing ? listing!.title : '');
+    _descriptionController = TextEditingController(text: initialDescription);
+    _quantityController = TextEditingController(text: initialQuantityMock);
+
+    // ✅ Inicializa variáveis de estado
+    if (isEditing) {
+      _title = listing!.title;
+      _description = initialDescription;
+      _category = initialCategoryMock;
+      _expiryDate = listing.expiryDate;
+      _quantity = initialQuantityMock;
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _quantityController.dispose();
+    super.dispose();
+  }
+
   Future<void> _selectDate(BuildContext context) async {
+    // ... (Função inalterada) ...
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _expiryDate ?? DateTime.now().add(const Duration(days: 1)),
@@ -44,9 +84,9 @@ class _NewAdPageState extends State<NewAdPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryColor, // Cor primária do tema
-              onPrimary: Colors.white, // Cor do texto no header
-              onSurface: Colors.black, // Cor do texto no calendário
+              primary: AppTheme.primaryColor,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
             ),
           ),
           child: child!,
@@ -60,32 +100,71 @@ class _NewAdPageState extends State<NewAdPage> {
     }
   }
   
-  // Função de simulação de salvamento
   void _saveForm() {
-    if (_formKey.currentState!.validate()) {
+    // Valida todos os campos do formulário e verifica se data/categoria foram selecionados
+    if (_formKey.currentState!.validate() && _expiryDate != null && _category != null) {
       _formKey.currentState!.save();
       
-      // ✅ CORREÇÃO APLICADA: Usando a variável _title para que o Analyzer a reconheça como "usada"
+      final adsService = Provider.of<AdsService>(context, listen: false);
+      final isEditing = widget.listingToEdit != null;
+
+      // ⚠️ Mock de dados que não vêm do formulário, mas são obrigatórios no modelo:
+      final statusProximidadeVencimento = isEditing ? widget.listingToEdit!.statusProximidadeVencimento : 'Novo anúncio!';
+      final contactInfoMock = '5511999999999';
+
+      // 1. Constrói o objeto (Novo ou Atualizado)
+      final listingToSave = FoodListing(
+        // Se for edição, mantém o ID original. Se for criação, usa ID 0 (o serviço gera o ID final).
+        id: isEditing ? widget.listingToEdit!.id : 0, 
+        title: _title,
+        description: _description ?? '', // Força String
+        expiryDate: _expiryDate!,
+        statusProximidadeVencimento: statusProximidadeVencimento, 
+        contactInfo: contactInfoMock,
+        imageUrl: widget.listingToEdit?.imageUrl, // Mantém a URL se for edição
+      );
+
+      // 2. Lógica de decisão: Edição ou Criação
+      if (isEditing) {
+        adsService.updateListing(listingToSave);
+      } else {
+        adsService.addListing(listingToSave);
+      }
+      
+      // Feedback visual
       ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Anúncio: "$_title" criado!\n'
-          'Descrição: ${_description ?? 'Não Selecionada'} | Quantidade: $_quantity'
-          // Poderíamos usar a descrição aqui, mas a mensagem ficaria longa.
+        SnackBar(
+          content: Text(
+            isEditing 
+                ? 'Anúncio: "$_title" atualizado com sucesso!'
+                : 'Anúncio: "$_title" publicado com sucesso!',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: AppTheme.primaryColor,
         ),
-        backgroundColor: AppTheme.primaryColor,
-      ),
-    );
-    // Navega de volta para a tela anterior
-    Navigator.pop(context); 
+      );
+
+      // Navega de volta para a tela anterior
+      Navigator.pop(context); 
+    } else {
+      // Feedback para campos faltando 
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, preencha todos os campos obrigatórios.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.listingToEdit != null;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Criar Novo Anúncio'),
+        // Título dinâmico
+        title: Text(isEditing ? 'Editar Anúncio' : 'Criar Novo Anúncio'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -96,15 +175,11 @@ class _NewAdPageState extends State<NewAdPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              // --- 1. FOTO (Foto e Location) ---
+              // --- FOTO e LOCALIZAÇÃO ---
               const Text('Foto e Localização', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-
-              // Botão para Upload de Foto (Placeholder Visual)
               _buildImageUploadPlaceholder(),
               const SizedBox(height: 16),
-
-              // Localização Atual (RF01) - Simulado
               _buildInfoContainer(
                 icon: Icons.location_on_outlined, 
                 text: 'Localização: Rua Exemplo, 123',
@@ -112,12 +187,13 @@ class _NewAdPageState extends State<NewAdPage> {
               ),
               const Divider(height: 30),
 
-              // --- 2. DADOS DO ALIMENTO (Título, Descrição, Categoria) ---
+              // --- 2. DADOS DO ALIMENTO ---
               const Text('Dados do Alimento', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
 
               // Título (RF01)
               TextFormField(
+                controller: _titleController, // ✅ Usando Controller
                 decoration: const InputDecoration(labelText: 'Título do Alimento*'),
                 maxLength: 50,
                 onSaved: (value) => _title = value!,
@@ -127,9 +203,10 @@ class _NewAdPageState extends State<NewAdPage> {
 
               // Descrição (RF01)
               TextFormField(
+                controller: _descriptionController, // ✅ Usando Controller
                 decoration: const InputDecoration(labelText: 'Descrição*'),
                 maxLines: 3,
-                onSaved: (value) => _description = value!,
+                onSaved: (value) => _description = value, // Salva como String?
                 validator: (value) => value!.isEmpty ? 'A descrição é obrigatória.' : null,
               ),
               const SizedBox(height: 16),
@@ -137,7 +214,6 @@ class _NewAdPageState extends State<NewAdPage> {
               // Categoria (RF01)
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(labelText: 'Categoria*'),
-                // ❌ CORREÇÃO: Removendo initialValue e usando value (DropdownButtonFormField usa 'value' ou 'initialValue' não ambos)
                 initialValue: _category, 
                 items: _categories.map((String category) {
                   return DropdownMenuItem<String>(
@@ -165,9 +241,10 @@ class _NewAdPageState extends State<NewAdPage> {
 
               // Quantidade (RF01)
               TextFormField(
+                controller: _quantityController, // ✅ Usando Controller
                 decoration: const InputDecoration(labelText: 'Quantidade e Unidade (Ex: 500g, 3 caixas)*'),
                 keyboardType: TextInputType.text,
-                onSaved: (value) => _quantity = value!,
+                onSaved: (value) => _quantity = value!, // Salva como String
                 validator: (value) => value!.isEmpty ? 'A quantidade é obrigatória.' : null,
               ),
               const Divider(height: 30),
@@ -177,8 +254,8 @@ class _NewAdPageState extends State<NewAdPage> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _saveForm,
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('Publicar Anúncio', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  icon: Icon(isEditing ? Icons.save : Icons.upload_file),
+                  label: Text(isEditing ? 'Salvar Alterações' : 'Publicar Anúncio', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
@@ -196,7 +273,6 @@ class _NewAdPageState extends State<NewAdPage> {
 
 // Widget auxiliar para o placeholder de upload de imagem (RF01)
 Widget _buildImageUploadPlaceholder() {
-  // Pegamos a cor base (R=210, G=210, B=210) e definimos o Alpha em 127 (50%)
   const Color placeholderWithOpacity = Color.fromARGB(127, 210, 210, 210);
 
   return Container(

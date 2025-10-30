@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 // 6. Importa todas as telas que irá gerenciar
 import 'home_page.dart';
 // A tela search_page.dart não é mais necessária (Busca está na Home)
-// A tela new_ad_page.dart será aberta via FloatingActionButton (FAB)
-import 'my_ads_page.dart';
+// ✅ ATENÇÃO: Ajustado para usar AdsPage
+import 'ads_page.dart'; 
 import 'profile_page.dart';
 // Importa o tema para customizações visuais
 import '../theme/app_theme.dart'; 
-// Importa NewAdPage para manter o link para o FAB futuro na tela MyAdsPage
+// Importa NewAdPage para manter o link para o FAB futuro na tela AdsPage
 import 'new_ad_page.dart'; 
 
 class MainNavigationScreen extends StatefulWidget {
@@ -18,24 +18,27 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  // ✅ Agora o índice vai de 0 a 2 (Home, Meus, Perfil)
+  // ✅ Agora o índice vai de 0 a 2 (Home, Anúncios, Perfil)
   int _selectedIndex = 0; 
 
   // ✅ Lista APENAS das 3 telas que serão exibidas no corpo do Scaffold.
   static const List<Widget> _bodyScreens = <Widget>[
     HomePage(),     // Índice 0: Home
-    MyAdsPage(),    // Índice 1: Meus
+    AdsPage(),      // Índice 1: Anúncios
     ProfilePage(),  // Índice 2: Perfil
   ];
   
   // A lógica de navegação agora é simples e direta
   void _onItemTapped(int index) {
     setState(() {
-      // O índice da tab corresponde diretamente ao índice da tela
       _selectedIndex = index;
     });
-    // Se, no futuro, quisermos manter o NewAdPage fora do FAB, 
-    // ele voltaria a ser um item especial aqui.
+  }
+
+  // Função auxiliar para verificar se o FAB deve ser exibido
+  bool _shouldShowFab() {
+    // 🎯 O FAB aparece na Home (0) E em Meus Anúncios (1)
+    return _selectedIndex == 0 || _selectedIndex == 1;
   }
 
   @override
@@ -51,12 +54,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       
       // --- 2. Body ---
-      // ✅ Exibe a tela correspondente ao índice
       body: _bodyScreens.elementAt(_selectedIndex), 
       
       // --- 3. Floating Action Button (FAB) ---
-      // 💡 Adicionado para sugerir a próxima etapa: o botão de ANUNCIAR
-      floatingActionButton: _selectedIndex == 1 
+      // ✅ CORREÇÃO: O FAB aparece se o índice for 0 (Home) OU 1 (Anúncios)
+      floatingActionButton: _shouldShowFab()
           ? FloatingActionButton(
               onPressed: () {
                 // Abre a tela de criação do anúncio
@@ -68,9 +70,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               backgroundColor: AppTheme.primaryColor,
               child: const Icon(Icons.add, color: Colors.white),
             )
-          : null, // O FAB só aparece na tela "Meus Anúncios" (Índice 1)
+          : null,
       
-      // Ajusta o FAB para ficar centralizado na coluna
+      // Ajusta o FAB para ficar na extremidade inferior direita
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       
       // --- 4. BottomNavigationBar (3 destinos) ---
@@ -81,7 +83,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         backgroundColor: Colors.white,
         elevation: 1, 
         
-        // ✅ Apenas 3 destinos agora
         destinations: const <NavigationDestination>[
           // 0. Home
           NavigationDestination(
@@ -90,11 +91,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Home',
           ),
           
-          // 1. Meus (Novo hub de gerenciamento e criação)
+          // 1. Anúncios
           NavigationDestination(
             selectedIcon: Icon(Icons.list_alt, color: AppTheme.primaryColor),
             icon: Icon(Icons.list_alt_outlined, color: Colors.black54),
-            label: 'Meus',
+            label: 'Anúncios',
           ),
           // 2. Perfil
           NavigationDestination(
