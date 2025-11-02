@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import '../models/food_listing.dart'; 
 import '../theme/app_theme.dart'; // Importa seu arquivo de tema
 
-// O nome da classe deve ser SimpleListingCard para ser coerente com o nome do arquivo
 class SimpleListingCard extends StatelessWidget {
   final FoodListing listing;
   final VoidCallback? onTap; // ✅ O callback está aqui
   
-  const SimpleListingCard({super.key, required this.listing, this.onTap,});
+  // ✅ ATENÇÃO: Corrigido o construtor para aceitar 'onTap' corretamente
+  const SimpleListingCard({
+    super.key, 
+    required this.listing, 
+    this.onTap,
+  });
   
 
   Widget _buildStatusChip(String status) {
@@ -47,56 +51,58 @@ class SimpleListingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Placeholder Fixo
-              Container(
-                width: 60,
-                height: 60,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: AppTheme.imagePlaceholder, 
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.image_not_supported_outlined, 
-                    color: Colors.grey,
-                    size: 30, 
+        // 🎯 INKWELL ADICIONADO AQUI para capturar o toque em toda a área
+        InkWell(
+          onTap: onTap, // Usa o callback passado pela HomePage/AdsPage
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Placeholder Fixo
+                Container(
+                  width: 60,
+                  height: 60,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.imagePlaceholder, 
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.image_not_supported_outlined, 
+                      color: Colors.grey,
+                      size: 30, 
+                    ),
                   ),
                 ),
-              ),
-              
-              const SizedBox(width: 16),
-              
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // AQUI está a correção da Opção 1: usamos o '??'
-                    Text(
-                      // Se listing.title for nulo (apesar de ser required), usa 'Produto Desconhecido'
-                      listing.title, 
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                
+                const SizedBox(width: 16),
+                
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        listing.title, 
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    
-                    // Chip de Status
-                    _buildStatusChip(listing.statusProximidadeVencimento),
-                  ],
+                      const SizedBox(height: 4),
+                      
+                      // Chip de Status
+                      _buildStatusChip(listing.statusProximidadeVencimento),
+                    ],
+                  ),
                 ),
-              ),
 
-              // Ícone para Detalhes
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            ],
+                // Ícone para Detalhes (Continua apenas como visual)
+                const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+              ],
+            ),
           ),
         ),
         // Divisor

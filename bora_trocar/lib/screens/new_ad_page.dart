@@ -111,6 +111,7 @@ class _NewAdPageState extends State<NewAdPage> {
       // ⚠️ Mock de dados que não vêm do formulário, mas são obrigatórios no modelo:
       final statusProximidadeVencimento = isEditing ? widget.listingToEdit!.statusProximidadeVencimento : 'Novo anúncio!';
       final contactInfoMock = '5511999999999';
+      
 
       // 1. Constrói o objeto (Novo ou Atualizado)
       final listingToSave = FoodListing(
@@ -122,6 +123,7 @@ class _NewAdPageState extends State<NewAdPage> {
         statusProximidadeVencimento: statusProximidadeVencimento, 
         contactInfo: contactInfoMock,
         imageUrl: widget.listingToEdit?.imageUrl, // Mantém a URL se for edição
+        quantity: _quantity,
       );
 
       // 2. Lógica de decisão: Edição ou Criação

@@ -12,6 +12,7 @@ class FoodListing {
   final DateTime expiryDate; 
   final String description;
   final String contactInfo; 
+  final String quantity;
 
   FoodListing({
     required this.id,
@@ -21,6 +22,7 @@ class FoodListing {
     required this.expiryDate,
     required this.description,
     required this.contactInfo,
+    required this.quantity
   });
 
   // 🎯 MÉTODO copyWith ADICIONADO
@@ -32,6 +34,7 @@ class FoodListing {
     DateTime? expiryDate,
     String? description,
     String? contactInfo,
+    String? quantity,
   }) {
     return FoodListing(
       // Se o novo ID for passado, usa-o. Caso contrário, usa o ID existente (this.id).
@@ -43,6 +46,7 @@ class FoodListing {
       expiryDate: expiryDate ?? this.expiryDate,
       description: description ?? this.description,
       contactInfo: contactInfo ?? this.contactInfo,
+      quantity: quantity ?? this.quantity,
     );
   }
   
@@ -61,6 +65,7 @@ final List<FoodListing> mockListings = [
     expiryDate: DateTime.now().add(const Duration(days: 1)),
     description: 'Pão de forma integral, pacote lacrado.',
     contactInfo: '5511987654321', 
+    quantity: '1 pacote',
   ),
   FoodListing(
     id: 2, // ID como INT
@@ -70,6 +75,7 @@ final List<FoodListing> mockListings = [
     expiryDate: DateTime.now(),
     description: 'Caixa de Leite Desnatado.',
     contactInfo: '5511987654321', 
+    quantity: '1 litro',
   ),
   FoodListing(
     id: 3, // ID como INT
@@ -79,6 +85,7 @@ final List<FoodListing> mockListings = [
     expiryDate: DateTime.now().add(const Duration(days: 5)),
     description: 'Metade de um frango assado.',
     contactInfo: '5511987654321',
+    quantity: '500g',
   ),
   FoodListing(
     id: 4, // ID como INT
@@ -88,5 +95,6 @@ final List<FoodListing> mockListings = [
     expiryDate: DateTime.now().add(const Duration(days: 3)),
     description: 'Três mangas maduras.',
     contactInfo: '5511987654321',
+    quantity: '3 unidades',
   ),
 ];

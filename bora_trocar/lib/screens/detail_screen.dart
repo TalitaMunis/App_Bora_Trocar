@@ -82,8 +82,6 @@ class DetailScreen extends StatelessWidget {
   
 // --- Ação de Edição (RF03) ---
   void _editListing(BuildContext context) {
-     // ✅ IMPLEMENTAÇÃO FINAL: Abre a tela de criação/edição, 
-     // passando o item para pré-preencher o formulário.
      Navigator.of(context).push(
        MaterialPageRoute(
          builder: (_) => NewAdPage(listingToEdit: listing), 
@@ -158,6 +156,12 @@ class DetailScreen extends StatelessWidget {
                 ),
               ),
             ),
+
+            // --- Quantidade (Campo que estava faltando antes) ---
+            const Text('Quantidade:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            Text(listing.quantity), 
+            const SizedBox(height: 20),
             
             const SizedBox(height: 20),
             

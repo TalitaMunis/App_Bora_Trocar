@@ -95,7 +95,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           NavigationDestination(
             selectedIcon: Icon(Icons.list_alt, color: AppTheme.primaryColor),
             icon: Icon(Icons.list_alt_outlined, color: Colors.black54),
-            label: 'Anúncios',
+            label: 'Meus Anúncios',
           ),
           // 2. Perfil
           NavigationDestination(
