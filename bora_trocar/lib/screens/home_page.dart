@@ -1,85 +1,134 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // ✅ Importar Provider
-// Importa o serviço que contém os dados
-import '../services/ads_service.dart'; 
-// Importa o widget do card (que renderiza cada item)
-import '../widgets/simple_listing_card.dart'; 
-// Importa o tema para estilização da barra de busca
-import '../theme/app_theme.dart'; 
-// Importa a tela de detalhes (para navegação futura)
-import 'detail_screen.dart'; 
+import 'package:provider/provider.dart';
+import '../services/ads_service.dart';
+import '../widgets/simple_listing_card.dart';
+import '../theme/app_theme.dart';
+import 'detail_screen.dart';
 
-// Esta é a tela Home (Feed de Anúncios)
-class HomePage extends StatelessWidget {
+// ✅ Alterado de StatelessWidget para StatefulWidget
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // ✅ 1. Cria o Controller Apenas Uma Vez
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializa o controller
+    _searchController = TextEditingController();
+
+    // 💡 IMPORTANTE: Adiciona um listener para atualizar o termo de busca no Provider.
+    // Isso garante que o estado de busca e o TextField estejam sempre sincronizados.
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    // Acessa o AdsService e atualiza o termo de busca
+    final adsService = Provider.of<AdsService>(context, listen: false);
+    adsService.setSearchTerm(_searchController.text);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Usamos Column para colocar a Barra de Busca acima da Lista (Feed)
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // --- 1. Campo de Busca ---
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10.0),
-              border: Border.all(color: AppTheme.dividerColor), 
-            ),
-            child: const TextField(
-              decoration: InputDecoration(
-                hintText: 'Buscar alimentos/Localidade',
-                hintStyle: TextStyle(color: Colors.grey),
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
-                border: InputBorder.none, 
-                contentPadding: EdgeInsets.symmetric(vertical: 10.0),
+    // Usamos o Consumer para ouvir as mudanças na busca e na lista
+    return Consumer<AdsService>(
+      builder: (context, adsService, child) {
+        // Usar a lista filtrada
+        final listings = adsService.filteredListings;
+
+        // Sincroniza o texto do Controller com o estado do Provider APENAS SE
+        // o texto for diferente (evita loop e problemas de direção).
+        if (_searchController.text != adsService.searchTerm &&
+            adsService.searchTerm.isNotEmpty) {
+          // Define o texto sem mover o cursor para o final
+          _searchController.text = adsService.searchTerm;
+        } else if (adsService.searchTerm.isEmpty &&
+            _searchController.text.isNotEmpty) {
+          _searchController.text = '';
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // --- 1. Campo de Busca (CORRIGIDO E OTIMIZADO) ---
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10.0),
+                  border: Border.all(color: AppTheme.dividerColor),
+                ),
+                child: TextField(
+                  // ✅ Usando o controller persistente
+                  controller: _searchController,
+
+                  // ✅ Força a direção do texto para LTR
+                  textDirection: TextDirection.ltr,
+
+                  // ❌ Removido o onChanged, pois o listener do controller faz o trabalho.
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar alimentos/Localidade',
+                    hintStyle: TextStyle(color: Colors.grey),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 10.0),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
 
-        // --- 2. Feed de Anúncios (ListView Reativo) ---
-        Expanded(
-          // ✅ Consumer escuta as mudanças no AdsService
-          child: Consumer<AdsService>(
-            builder: (context, adsService, child) {
-              final listings = adsService.listings; // A lista completa de anúncios
-              
-              if (listings.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'Nenhum anúncio disponível no momento.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                );
-              }
-              
-              return ListView.builder(
-                itemCount: listings.length,
-                itemBuilder: (context, index) {
-                  final listing = listings[index];
-                  return SimpleListingCard(
-                    listing: listing,
-                   onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (ctx) => DetailScreen(
-                            listing: listing,
-                            isUserOwner: false, // O dono é 'false' no feed geral
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
+            // --- 2. Feed de Anúncios (ListView Reativo e Filtrado) ---
+            Expanded(
+              child: listings.isEmpty
+                  ? Center(
+                      child: Text(
+                        adsService.searchTerm.isEmpty
+                            ? 'Nenhum anúncio disponível no momento.'
+                            : 'Nenhum resultado encontrado para "${_searchController.text}".',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: listings.length,
+                      itemBuilder: (context, index) {
+                        final listing = listings[index];
+                        return SimpleListingCard(
+                          listing: listing,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (ctx) => DetailScreen(
+                                  listing: listing,
+                                  isUserOwner: false,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -1,6 +1,6 @@
 name: bora_trocar
 description: "A new Flutter project."
-publish_to: 'none' # Remove esta linha se quiser publicar no pub.dev
+publish_to: "none" # Remove esta linha se quiser publicar no pub.dev
 
 version: 1.0.0+1
 
@@ -11,15 +11,15 @@ dependencies:
   flutter:
     sdk: flutter
   # ✅ Pacote INTl ADICIONADO para formatação de data na NewAdPage
-  intl: ^0.18.1 
+  intl: ^0.18.1
 
   provider: ^6.0.0
-  
-  shared_preferences: ^2.1.0  # Adicionando o número de patch
-  
+
+  shared_preferences: ^2.1.0 # Adicionando o número de patch
+
   # Pacotes externos
   cupertino_icons: ^1.0.8
-  url_launcher: ^6.3.1  # pacote para abrir links externos
+  url_launcher: ^6.3.1 # pacote para abrir links externos
 
 dev_dependencies:
   flutter_test:
@@ -32,7 +32,7 @@ flutter:
   # Exemplo de assets (descomente se usar)
   # assets:
   #   - images/
-  
+
   # Exemplo de fontes (descomente se usar)
   # fonts:
   #   - family: Schyler

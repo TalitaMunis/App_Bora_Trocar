@@ -15,18 +15,19 @@ class MyApp extends StatelessWidget {
     // Envolve o MaterialApp com o Provider
     return ChangeNotifierProvider(
       // Cria uma única instância do AdsService no topo do widget tree
-      create: (context) => AdsService(), 
-      child: MaterialApp( // O restante do seu MaterialApp
+      create: (context) => AdsService(),
+      child: MaterialApp(
+        // O restante do seu MaterialApp
         title: 'Bora Trocar!',
         debugShowCheckedModeBanner: false,
 
-      // Aplica o tema global que definimos em /theme/app_theme.dart
-      theme: AppTheme.lightTheme,
+        // Aplica o tema global que definimos em /theme/app_theme.dart
+        theme: AppTheme.lightTheme,
 
-      // Define a tela principal que será carregada.
-      // Usamos nosso widget que gerencia a navegação por tabs.
-      home: const SplashScreen(),
-      )
+        // Define a tela principal que será carregada.
+        // Usamos nosso widget que gerencia a navegação por tabs.
+        home: const SplashScreen(),
+      ),
     );
   }
 }
