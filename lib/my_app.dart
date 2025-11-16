@@ -1,7 +1,8 @@
+import 'package:bora_trocar/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 //import 'package:firebase_core/firebase_core.dart';
-import 'screens/main_navigation_screen.dart';
+
 import 'theme/app_theme.dart';
 import 'services/ads_service.dart';
 import 'services/user_service.dart';
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         //darkTheme: AppTheme.darkTheme,
         //themeMode: ThemeMode.system,
-        home: const MainNavigationScreen(),
+        home: const SplashScreen(),
       ),
     );
   }
