@@ -1,10 +1,16 @@
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import '../models/food_listing.dart';
 
-/// Gerencia a lista de anúncios (FoodListing) e notifica os ouvintes (Widgets).
 class AdsService extends ChangeNotifier {
-  final List<FoodListing> _listings = [...mockListings];
-  int _nextId = mockListings.length + 1;
+  late Box<FoodListing> _box;
+
+  AdsService() {
+    _box = Hive.box<FoodListing>('adsBox');
+  }
+
+  List<FoodListing> get _listings => _box.values.toList();
+  int get _nextId => _listings.length + 1;
 
   String _searchTerm = '';
 
@@ -36,58 +42,43 @@ class AdsService extends ChangeNotifier {
 
   /// Retorna a lista filtrada por termo de busca (Usado na HomePage).
   List<FoodListing> get filteredListings {
-    if (_searchTerm.isEmpty) {
-      return [..._listings];
-    }
+    if (_searchTerm.isEmpty) return _listings;
 
-    // 1. Normaliza o termo de busca (para ser case e accent-insensitive)
     final normalizedSearchTerm = _normalizeString(_searchTerm);
 
     return _listings.where((listing) {
-      // 2. Normaliza os dados do anúncio para a comparação
-      final normalizedTitle = _normalizeString(listing.title);
-      final normalizedDescription = _normalizeString(listing.description);
-      final normalizedStatus = _normalizeString(
-        listing.statusProximidadeVencimento,
-      );
-
-      // Filtra (agora sem se preocupar com acentos!)
-      return normalizedTitle.contains(normalizedSearchTerm) ||
-          normalizedDescription.contains(normalizedSearchTerm) ||
-          normalizedStatus.contains(normalizedSearchTerm);
+      return _normalizeString(listing.title).contains(normalizedSearchTerm) ||
+          _normalizeString(
+            listing.description,
+          ).contains(normalizedSearchTerm) ||
+          _normalizeString(
+            listing.statusProximidadeVencimento,
+          ).contains(normalizedSearchTerm);
     }).toList();
   }
 
-  /// Retorna os anúncios publicados pelo usuário atual (simulado) (Usado na AdsPage).
   List<FoodListing> get userListings {
-    // ... (permanece inalterado) ...
-    return _listings.where((listing) => listing.id % 2 != 0).toList();
+    return _listings.where((l) => l.id % 2 != 0).toList();
   }
 
   // --- MÉTODOS CRUD ---
 
   /// Adiciona um novo anúncio (Criação)
   void addListing(FoodListing newListing) {
-    // Cria uma nova instância com ID único
-    final listingWithId = newListing.copyWith(id: _nextId++);
-    _listings.add(listingWithId);
-
+    final listingWithId = newListing.copyWith(id: _nextId);
+    _box.put(listingWithId.id, listingWithId);
     notifyListeners();
   }
 
   /// Atualiza um anúncio existente (Atualização)
   void updateListing(FoodListing updatedListing) {
-    final index = _listings.indexWhere((l) => l.id == updatedListing.id);
-
-    if (index != -1) {
-      _listings[index] = updatedListing;
-      notifyListeners();
-    }
+    _box.put(updatedListing.id, updatedListing);
+    notifyListeners();
   }
 
   /// Remove um anúncio da lista (Exclusão)
   void deleteListing(int id) {
-    _listings.removeWhere((l) => l.id == id);
+    _box.delete(id);
     notifyListeners();
   }
 }
