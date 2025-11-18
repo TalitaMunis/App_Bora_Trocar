@@ -1,15 +1,25 @@
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 
-/// Modelo que representa o perfil do usuário no aplicativo.
+part 'user.g.dart'; // ✅ Linha OBRIGATÓRIA
+
+// ✅ HiveType: ID único (1)
+@HiveType(typeId: 1)
 class User {
-  // Dados obrigatórios
+  // Campos obrigatórios do perfil (RF)
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String name;
+  @HiveField(2)
   final String phone;
+  @HiveField(3)
   final String city;
 
-  // Dados opcionais
+  // Campos opcionais
+  @HiveField(4)
   final String? email;
+  @HiveField(5)
   final String? photoUrl;
 
   User({
@@ -21,7 +31,7 @@ class User {
     this.photoUrl,
   });
 
-  // Método copyWith para facilitar atualizações (necessário para o formulário de edição)
+  // Método copyWith
   User copyWith({
     String? id,
     String? name,

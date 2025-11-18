@@ -1,3 +1,4 @@
+import 'package:bora_trocar/screens/login_signup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bora_trocar/screens/main_navigation_screen.dart';
@@ -20,7 +21,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        MaterialPageRoute(builder: (_) => const LoginSignupPage()),
       );
     }
   }

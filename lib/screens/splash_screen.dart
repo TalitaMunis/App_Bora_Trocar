@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_screen.dart';
-import 'main_navigation_screen.dart';
+// import 'main_navigation_screen.dart'; ❌ REMOVIDO
+import 'auth_wrapper.dart'; // ✅ NOVO DESTINO
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,24 +22,25 @@ class _SplashScreenState extends State<SplashScreen> {
     // Simula pequenas inicializações do app
     await Future.delayed(const Duration(seconds: 2));
 
+    // Como o Hive faz a inicialização de forma assíncrona no Provider,
+    // a SplashScreen só precisa checar a Onboarding (SharePrefs).
+
     final prefs = await SharedPreferences.getInstance();
+    // 💡 Para fins de persistência local, o shared_preferences precisa estar na Box do Hive!
+    // Vamos manter por enquanto, mas isso é algo a migrar para o Hive futuramente.
     bool hasSeenOnboarding = prefs.getBool('onboarding_complete') ?? false;
 
-    if (!hasSeenOnboarding) {
-      Navigator.pushReplacement(
-        mounted
-            ? context
-            : throw Exception("Contexto não montado para navegação"),
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        mounted
-            ? context
-            : throw Exception("Contexto não montado para navegação"),
-        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-      );
-    }
+    // 1. Define o destino
+    Widget destination = hasSeenOnboarding
+        ? const AuthWrapper() // ✅ Vai para o Wrapper que checa login
+        : const OnboardingScreen(); // Vai para a Onboarding
+
+    // 2. Navega
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => destination),
+    );
   }
 
   @override
@@ -49,8 +51,17 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // LOGO DO APP
-            Image.asset("assets/icon/icon.png", width: 120, height: 120),
+            // LOGO DO APP (Assumindo que o asset está configurado)
+            Image.asset(
+              "assets/icon/icon.png",
+              width: 120,
+              height: 120,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.swap_horiz,
+                size: 120,
+                color: Color(0xFF4CAF50),
+              ), // Fallback visual
+            ),
 
             const SizedBox(height: 24),
 
