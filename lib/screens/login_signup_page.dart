@@ -51,6 +51,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         phone: _phone,
         city: _city,
         email: _email.isNotEmpty ? _email : null,
+        password: _password, // Armazena a senha (simulada)
       );
     }
 

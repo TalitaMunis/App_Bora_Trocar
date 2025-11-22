@@ -16,6 +16,7 @@ dependencies:
   provider: ^6.1.2
   crypto: ^3.0.3
   uuid: ^4.5.0
+  geolocator: ^11.0.0 # ✅ Adicionado para a funcionalidade de localização
 
   # HIVE (versões estáveis 100% compatíveis entre si)
   hive: ^2.2.3

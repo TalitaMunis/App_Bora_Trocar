@@ -21,12 +21,15 @@ class User {
   final String? email;
   @HiveField(5)
   final String? photoUrl;
+  @HiveField(6)
+  final String password; // ✅ NOVO: Senha para login
 
   User({
     required this.id,
     required this.name,
     required this.phone,
     required this.city,
+    required this.password,
     this.email,
     this.photoUrl,
   });
@@ -37,6 +40,7 @@ class User {
     String? name,
     String? phone,
     String? city,
+    String? password, // ✅ NOVO
     ValueGetter<String?>? email,
     ValueGetter<String?>? photoUrl,
   }) {
@@ -45,6 +49,7 @@ class User {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       city: city ?? this.city,
+      password: password ?? this.password, // ✅ NOVO
       email: email != null ? email() : this.email,
       photoUrl: photoUrl != null ? photoUrl() : this.photoUrl,
     );

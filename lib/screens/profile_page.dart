@@ -1,33 +1,92 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import '../services/user_service.dart'; // Importa o serviço que contém o estado
+import '../services/user_service.dart';
 import 'edit_profile_page.dart';
 import 'login_signup_page.dart'; // Importa Login Page para o modo Convidado
+
+// --- WIDGETS AUXILIARES MOVIDOS PARA O ARQUIVO ---
+Widget _buildProfilePhoto(String? url) {
+  // Lógica para exibir a foto de perfil ou o placeholder
+  return CircleAvatar(
+    radius: 60,
+    backgroundColor: AppTheme.imagePlaceholder,
+    backgroundImage: url != null ? NetworkImage(url) : null,
+    child: url == null
+        ? Icon(Icons.person_outline, size: 60, color: Colors.grey.shade600)
+        : null,
+  );
+}
+
+Widget _buildInfoCard({
+  required String title,
+  required String value,
+  required IconData icon,
+}) {
+  // Card reutilizável para exibir informações do perfil
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: AppTheme.proximityBackground,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Icon(icon, size: 20, color: AppTheme.primaryColor),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+// --- FIM DOS WIDGETS AUXILIARES ---
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Scaffold com a AppBar (gerenciado pelo MainNavigationScreen)
     return Scaffold(
       appBar: AppBar(
         title: const Text('Perfil'),
         backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
       ),
+      // O Consumer agora é o corpo do Scaffold
       body: Consumer<UserService>(
         builder: (context, userService, child) {
-          // 🎯 1. TRATAMENTO DE LOADING
+          // 🎯 1. TRATAMENTO DE LOADING: Mostra o loading enquanto o Hive inicializa
           if (!userService.isInitialized) {
             return const Center(
               child: CircularProgressIndicator(color: AppTheme.primaryColor),
             );
           }
 
-          // 2. Se estiver inicializado, obtém o usuário e flags
+          // 2. Se estiver inicializado (já carregou do Hive), exibe o conteúdo
           final currentUser = userService.currentUser;
           final theme = Theme.of(context);
-          final isGuest = !userService.isUserLoggedIn;
+          final isGuest =
+              !userService.isUserLoggedIn; // Checa se é usuário convidado
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
@@ -74,9 +133,8 @@ class ProfilePage extends StatelessWidget {
                   width: double.infinity,
                   child: isGuest
                       ? ElevatedButton.icon(
-                          // MODO CONVIDADO
+                          // MODO CONVIDADO: Botão de Login
                           onPressed: () {
-                            // Navega para a tela de Login/Cadastro
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => const LoginSignupPage(),
@@ -95,7 +153,7 @@ class ProfilePage extends StatelessWidget {
                           ),
                         )
                       : ElevatedButton.icon(
-                          // MODO LOGADO (Editar)
+                          // MODO LOGADO: Botão de Edição
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -122,11 +180,15 @@ class ProfilePage extends StatelessWidget {
                 if (!isGuest)
                   TextButton(
                     onPressed: () async {
+                      // Capture messenger and service before awaiting to avoid
+                      // using `context` across an async gap.
                       final messenger = ScaffoldMessenger.of(context);
-                      await Provider.of<UserService>(
+                      final userServiceAction = Provider.of<UserService>(
                         context,
                         listen: false,
-                      ).logout();
+                      );
+
+                      await userServiceAction.logout();
                       messenger.showSnackBar(
                         const SnackBar(content: Text('Saindo da conta...')),
                       );
@@ -143,58 +205,6 @@ class ProfilePage extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
-  }
-
-  // --- Widgets Auxiliares (movidos para dentro da classe para fins de concisão no Canvas) ---
-  Widget _buildProfilePhoto(String? url) {
-    return CircleAvatar(
-      radius: 60,
-      backgroundColor: AppTheme.imagePlaceholder,
-      backgroundImage: url != null ? NetworkImage(url) : null,
-      child: url == null
-          ? Icon(Icons.person_outline, size: 60, color: Colors.grey.shade600)
-          : null,
-    );
-  }
-
-  Widget _buildInfoCard({
-    required String title,
-    required String value,
-    required IconData icon,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.proximityBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(icon, size: 20, color: AppTheme.primaryColor),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
