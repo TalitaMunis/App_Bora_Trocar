@@ -46,6 +46,12 @@ class _HomePageState extends State<HomePage> {
     // Usamos o Consumer para ouvir as mudanças na busca e na lista
     return Consumer<AdsService>(
       builder: (context, adsService, child) {
+        // 🎯 2. TRATAMENTO DE LOADING
+        if (!adsService.isInitialized) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppTheme.primaryColor),
+          );
+        }
         // Usar a lista filtrada
         final listings = adsService.filteredListings;
 
