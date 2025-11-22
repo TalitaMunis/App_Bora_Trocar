@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../models/user.dart'; // Importa o modelo User
+import '../models/user.dart';
 
 // Dados iniciais (O ÚNICO USUÁRIO MOCK PERMANENTE É O CONVIDADO/GUEST)
 final User initialGuestUser = User(
@@ -15,24 +15,26 @@ final User initialGuestUser = User(
 const String userBoxName = 'usersBox';
 const String userKey = 'profile';
 const String registeredUsersBoxName =
-    'registeredUsers'; // ✅ NOVA BOX para cadastros globais
+    'registeredUsers'; // Box que guarda TODOS os cadastros
 
 class UserService extends ChangeNotifier {
   bool _isInitialized = false;
-  bool get isInitialized => _isInitialized; // Usado no AuthWrapper para loading
+  bool get isInitialized => _isInitialized;
 
   late Box<User> _userBox;
   late Box<User>
-  _registeredUsersBox; // ✅ Box que armazena todos os usuários cadastrados
+  _registeredUsersBox; // Box que armazena todos os usuários cadastrados
 
   UserService() {
     _initHive();
   }
 
   Future<void> _initHive() async {
-    // 1. Abre Boxes
+    // 1. ✅ Abre Boxes de forma persistente (aguarda o carregamento)
     _userBox = await Hive.openBox<User>(userBoxName);
-    _registeredUsersBox = await Hive.openBox<User>(registeredUsersBoxName);
+    _registeredUsersBox = await Hive.openBox<User>(
+      registeredUsersBoxName,
+    ); // 🎯 ABERTURA CRÍTICA
 
     if (_userBox.isEmpty) {
       // Garante que o estado inicial é 'guest' (convidado)
@@ -63,36 +65,38 @@ class UserService extends ChangeNotifier {
 
   /// 🎯 Realiza o Cadastro de um novo usuário
   /// Retorna true se o cadastro foi bem-sucedido, false se o telefone já existe.
+  /// 🎯 Realiza o Cadastro de um novo usuário
   Future<bool> signup(User newUser) async {
     // 1. Verifica se o telefone já existe
+    // ✅ CORREÇÃO: Busca por telefone na BOX de usuários registrados
     if (_registeredUsersBox.values.any((user) => user.phone == newUser.phone)) {
       return false; // Usuário já existe
     }
 
-    // 2. Salva o novo usuário na Box de usuários registrados (persistência)
-    // Usamos o telefone como chave temporária na box de registrados
-    await _registeredUsersBox.put(newUser.phone, newUser);
+    // 2. Salva o novo usuário na Box de usuários registrados (a Box já foi aberta no _initHive)
+    await _registeredUsersBox.put(
+      newUser.phone,
+      newUser,
+    ); // ✅ Usa o telefone como chave
 
-    // 3. Loga o novo usuário imediatamente (troca o 'guest' pelo usuário real)
+    // 3. Loga o novo usuário imediatamente
     await updateUser(newUser);
 
     return true;
   }
 
   /// 🎯 Realiza o Login
-  /// Retorna o objeto User se o login for bem-sucedido, null caso contrário.
   Future<User?> login(String phone, String password) async {
-    // 1. Tenta encontrar o usuário pelo telefone (que é a chave que usamos)
+    // 1. Tenta encontrar o usuário pelo telefone na BOX de usuários registrados
     // Usamos firstWhere para simular a busca no banco
     final user = _registeredUsersBox.values.firstWhere(
       (u) => u.phone == phone,
-      orElse: () =>
-          initialGuestUser.copyWith(id: 'not_found'), // Usuário não encontrado
+      orElse: () => initialGuestUser.copyWith(id: 'not_found'),
     );
 
     // 2. Verifica se encontrou e se a senha corresponde
     if (user.id != 'not_found' && user.password == password) {
-      // Loga o usuário, atualizando o estado 'current_user'
+      // Loga o usuário
       await updateUser(user);
       return user;
     }
