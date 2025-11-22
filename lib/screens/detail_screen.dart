@@ -5,33 +5,32 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/food_listing.dart';
 import '../services/ads_service.dart';
 import '../theme/app_theme.dart';
-import 'new_ad_page.dart'; // Para navegação de Edição
+import 'new_ad_page.dart';
+import '../utils/auth_check.dart'; // ✅ IMPORTANTE: Utilitário de checagem
 
 class DetailScreen extends StatelessWidget {
   final FoodListing listing;
-  // Apenas para fins de simulação de permissão: 
-  // Em um app real, verificaríamos o userId do anúncio.
-  final bool isUserOwner; 
+  final bool isUserOwner;
 
   const DetailScreen({
-    super.key, 
+    super.key,
     required this.listing,
-    this.isUserOwner = false, // Assumimos true para testar os botões de edição/exclusão
+    this.isUserOwner = false,
   });
 
   // --- Lógica de Formatação ---
   String _formatExpiry(DateTime date) {
     final now = DateTime.now();
     final difference = date.difference(now).inDays;
-    
+
     if (difference == 0) return 'Vence HOJE';
     if (difference == 1) return 'Vence AMANHÃ';
     if (difference < 0) return 'VENCIDO!';
-    
+
     return 'Vence em $difference dias';
   }
 
-  // --- Ação de Contato ---
+  // --- Ação de Contato (Lógica que será chamada APÓS o checkAuth) ---
   Future<void> _launchWhatsApp(BuildContext context, String contact) async {
     final uri = Uri.parse(
       'https://wa.me/$contact?text=Olá! Vi o seu anúncio de ${listing.title} no Bora Trocar!. Ainda está disponível?',
@@ -55,7 +54,9 @@ class DetailScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmar Exclusão'),
-        content: Text('Tem certeza que deseja excluir o anúncio "${listing.title}"? Esta ação é irreversível.'),
+        content: Text(
+          'Tem certeza que deseja excluir o anúncio "${listing.title}"? Esta ação é irreversível.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -63,7 +64,10 @@ class DetailScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Excluir', style: TextStyle(color: Colors.red.shade700)),
+            child: Text(
+              'Excluir',
+              style: TextStyle(color: Colors.red.shade700),
+            ),
           ),
         ],
       ),
@@ -71,24 +75,23 @@ class DetailScreen extends StatelessWidget {
 
     if (shouldDelete == true) {
       adsService.deleteListing(listing.id);
-      // Navega de volta para a tela anterior
+
       if (!context.mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Anúncio "${listing.title}" excluído com sucesso!')),
+        SnackBar(
+          content: Text('Anúncio "${listing.title}" excluído com sucesso!'),
+        ),
       );
     }
   }
-  
-// --- Ação de Edição (RF03) ---
-  void _editListing(BuildContext context) {
-     Navigator.of(context).push(
-       MaterialPageRoute(
-         builder: (_) => NewAdPage(listingToEdit: listing), 
-       ),
-     );
-  }
 
+  // --- Ação de Edição (RF03) ---
+  void _editListing(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => NewAdPage(listingToEdit: listing)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,22 +100,24 @@ class DetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(listing.title),
-        backgroundColor: AppTheme.primaryColor, // Usando AppTheme
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
-        
+
         // Ações de gerenciamento (Editar/Excluir) aparecem na AppBar
-        actions: isUserOwner ? [
-          // Botão de Editar (RF03)
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => _editListing(context),
-          ),
-          // Botão de Excluir (RF04)
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmAndDelete(context),
-          ),
-        ] : null,
+        actions: isUserOwner
+            ? [
+                // Botão de Editar (RF03)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _editListing(context),
+                ),
+                // Botão de Excluir (RF04)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _confirmAndDelete(context),
+                ),
+              ]
+            : null,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -121,62 +126,81 @@ class DetailScreen extends StatelessWidget {
           children: [
             // --- Imagem (Placeholder/NetworkImage) ---
             Image.network(
-              listing.imageUrl ?? '', 
+              listing.imageUrl ??
+                  'https://placehold.co/600x400/999999/FFFFFF?text=Sem+Foto',
               height: 250,
               width: double.infinity,
               fit: BoxFit.cover,
-              // Mantido o errorBuilder para placeholder
               errorBuilder: (context, error, stackTrace) {
                 return Container(
                   height: 250,
                   color: AppTheme.imagePlaceholder,
                   child: const Center(
-                    child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 50,
+                      color: Colors.grey,
+                    ),
                   ),
                 );
               },
             ),
             const SizedBox(height: 20),
-            
+
             // --- Título e Status de Validade ---
             Text(listing.title, style: theme.textTheme.headlineSmall),
             const SizedBox(height: 10),
-            Container( // Contêiner para estilizar o status de validade
+            Container(
+              // Contêiner para estilizar o status de validade
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _formatExpiry(listing.expiryDate).contains('HOJE') ? AppTheme.alertCriticalBackground : AppTheme.alertWarningBackground,
+                color: _formatExpiry(listing.expiryDate).contains('VENCIDO')
+                    ? AppTheme.alertCriticalBackground
+                    : AppTheme.alertWarningBackground,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 _formatExpiry(listing.expiryDate),
                 style: TextStyle(
-                  color: _formatExpiry(listing.expiryDate).contains('HOJE') ? AppTheme.alertCritical : AppTheme.alertWarning,
+                  color: _formatExpiry(listing.expiryDate).contains('VENCIDO')
+                      ? AppTheme.alertCritical
+                      : AppTheme.alertWarning,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
               ),
             ),
 
-            // --- Quantidade (Campo que estava faltando antes) ---
-            const Text('Quantidade:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            // --- Quantidade ---
+            const SizedBox(height: 20),
+            const Text(
+              'Quantidade:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            Text(listing.quantity), 
+            Text(listing.quantity),
             const SizedBox(height: 20),
-            
-            const SizedBox(height: 20),
-            
+
             // --- Descrição ---
-            const Text('Descrição:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Descrição:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            Text(listing.description), 
+            Text(listing.description),
             const SizedBox(height: 30),
-            
+
             // --- Botão de Contato (Para usuários NÃO-DONOS) ---
             if (!isUserOwner)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _launchWhatsApp(context, listing.contactInfo),
+                  onPressed: () {
+                    // ✅ CORREÇÃO: Se o usuário estiver logado, continua para o WhatsApp. Caso contrário, redireciona para o Login.
+                    if (checkAuthAndNavigate(context)) {
+                      _launchWhatsApp(context, listing.contactInfo);
+                    }
+                  },
                   icon: const Icon(Icons.chat),
                   label: const Text('Entrar em contato via WhatsApp'),
                   style: ElevatedButton.styleFrom(

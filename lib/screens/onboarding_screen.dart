@@ -1,7 +1,7 @@
 import 'package:bora_trocar/screens/login_signup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:bora_trocar/screens/main_navigation_screen.dart';
+//import 'package:bora_trocar/screens/main_navigation_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

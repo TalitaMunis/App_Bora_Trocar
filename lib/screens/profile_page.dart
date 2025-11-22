@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+//import '../models/user.dart';
 import '../services/user_service.dart'; // Importa o serviço que contém o estado
-import 'edit_profile_page.dart'; // Importa a tela de edição
+import 'edit_profile_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
-  // O método build agora envolve a tela em um Consumer para reagir às mudanças do perfil
   @override
   Widget build(BuildContext context) {
     return Consumer<UserService>(
-      // ✅ Escuta as mudanças no perfil
       builder: (context, userService, child) {
-        final currentUser = userService.currentUser; // Obtém o estado atual
+        final currentUser = userService.currentUser;
         final theme = Theme.of(context);
 
         return SingleChildScrollView(
@@ -27,7 +26,7 @@ class ProfilePage extends StatelessWidget {
 
               // --- 2. NOME DO USUÁRIO ---
               Text(
-                currentUser.name, // Exibe o nome atualizado
+                currentUser.name,
                 style: theme.textTheme.headlineSmall!.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -61,7 +60,7 @@ class ProfilePage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // ✅ Navega, passando o objeto User ATUALIZADO para a tela de edição
+                    // Navega, passando o objeto User ATUALIZADO para a tela de edição
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (ctx) =>
@@ -86,16 +85,36 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // ... (Botão Sair)
+              // --- BOTÃO DE SAIR (LOGOUT) ---
               TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                onPressed: () async {
+                  // ✅ LIGAÇÃO COM O SERVIÇO DE LOGOUT
+                  // Pede o serviço sem escutar (listen: false) para disparar a ação.
+                  final userServiceAction = Provider.of<UserService>(
+                    context,
+                    listen: false,
+                  );
+
+                  // Capture the messenger before the async gap to avoid using
+                  // `context` after `await` (use_build_context_synchronously).
+                  final messenger = ScaffoldMessenger.of(context);
+
+                  // Chama o método que salva o usuário como 'guest'
+                  await userServiceAction.logout();
+
+                  // O AuthWrapper (tela pai) detectará a mudança de estado e redirecionará
+                  // automaticamente para a LoginSignupPage.
+
+                  messenger.showSnackBar(
                     const SnackBar(content: Text('Saindo da conta...')),
                   );
                 },
                 child: Text(
                   'Sair da Conta',
-                  style: TextStyle(color: Colors.red.shade700),
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],

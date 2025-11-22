@@ -1,23 +1,52 @@
-import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
-import '../models/food_listing.dart';
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../models/food_listing.dart'; // Importa o modelo e a lista mockada
+
+// Nome da Box (Tabela) para os anúncios
+const String adsBoxName = 'adsBox';
 
 class AdsService extends ChangeNotifier {
-  late Box<FoodListing> _box;
+  late Box<FoodListing> _adsBox;
 
-  AdsService() {
-    _box = Hive.box<FoodListing>('adsBox');
-  }
-
-  List<FoodListing> get _listings => _box.values.toList();
-  int get _nextId => _listings.length + 1;
+  List<FoodListing> _listings = [];
+  bool _isInitialized = false;
 
   String _searchTerm = '';
-
-  // Getter para o termo de busca atual
   String get searchTerm => _searchTerm;
+  bool get isInitialized => _isInitialized;
 
-  // Setter: Atualiza o termo de busca e notifica a UI
+  AdsService() {
+    _initHive();
+  }
+
+  // Lógica de Inicialização Assíncrona e Carregamento
+  Future<void> _initHive() async {
+    // 1. Abre a Box
+    _adsBox = await Hive.openBox<FoodListing>(adsBoxName);
+
+    // 2. Se a Box estiver vazia, preenche com os dados mockados
+    if (_adsBox.isEmpty) {
+      int nextId = 1;
+      // ✅ Acesso à lista mockada para popular o Hive
+      for (var listing in mockListings) {
+        await _adsBox.put(nextId, listing.copyWith(id: nextId++));
+      }
+    }
+
+    // 3. Adiciona um listener para a Box para reatividade
+    _adsBox.listenable().addListener(_updateListingsFromHive);
+
+    _updateListingsFromHive();
+    _isInitialized = true;
+    notifyListeners();
+  }
+
+  void _updateListingsFromHive() {
+    _listings = _adsBox.values.toList();
+    notifyListeners();
+  }
+
+  // ------------------ BUSCA ------------------
   void setSearchTerm(String term) {
     if (_searchTerm != term.toLowerCase()) {
       _searchTerm = term.toLowerCase();
@@ -25,9 +54,7 @@ class AdsService extends ChangeNotifier {
     }
   }
 
-  // 🎯 NOVA FUNÇÃO: Remove acentos e caracteres especiais (Acento-Insensitive)
-  String _normalizeString(String text) {
-    // Converte para minúsculo e remove acentos comuns no português.
+  String _normalize(String text) {
     return text
         .toLowerCase()
         .replaceAll(RegExp(r'[áàãâä]'), 'a')
@@ -38,47 +65,39 @@ class AdsService extends ChangeNotifier {
         .replaceAll(RegExp(r'[ç]'), 'c');
   }
 
-  // --- GETTERS DE LISTAGEM ---
-
-  /// Retorna a lista filtrada por termo de busca (Usado na HomePage).
+  // ------------------ LISTAGEM ------------------
   List<FoodListing> get filteredListings {
-    if (_searchTerm.isEmpty) return _listings;
+    if (_searchTerm.isEmpty) return [..._listings];
 
-    final normalizedSearchTerm = _normalizeString(_searchTerm);
+    final term = _normalize(_searchTerm);
 
     return _listings.where((listing) {
-      return _normalizeString(listing.title).contains(normalizedSearchTerm) ||
-          _normalizeString(
-            listing.description,
-          ).contains(normalizedSearchTerm) ||
-          _normalizeString(
-            listing.statusProximidadeVencimento,
-          ).contains(normalizedSearchTerm);
+      return _normalize(listing.title).contains(term) ||
+          _normalize(listing.description).contains(term) ||
+          _normalize(listing.statusProximidadeVencimento).contains(term);
     }).toList();
   }
 
   List<FoodListing> get userListings {
-    return _listings.where((l) => l.id % 2 != 0).toList();
+    return _listings.where((l) => l.isMockUserOwner).toList();
   }
 
-  // --- MÉTODOS CRUD ---
+  // ------------------ CRUD ------------------
 
-  /// Adiciona um novo anúncio (Criação)
-  void addListing(FoodListing newListing) {
-    final listingWithId = newListing.copyWith(id: _nextId);
-    _box.put(listingWithId.id, listingWithId);
-    notifyListeners();
+  Future<void> addListing(FoodListing newListing) async {
+    final newId = _adsBox.isEmpty
+        ? 1
+        : _adsBox.keys.cast<int>().reduce((a, b) => a > b ? a : b) + 1;
+    final listingWithId = newListing.copyWith(id: newId);
+
+    await _adsBox.put(listingWithId.id, listingWithId);
   }
 
-  /// Atualiza um anúncio existente (Atualização)
-  void updateListing(FoodListing updatedListing) {
-    _box.put(updatedListing.id, updatedListing);
-    notifyListeners();
+  Future<void> updateListing(FoodListing listing) async {
+    await _adsBox.put(listing.id, listing);
   }
 
-  /// Remove um anúncio da lista (Exclusão)
-  void deleteListing(int id) {
-    _box.delete(id);
-    notifyListeners();
+  Future<void> deleteListing(int id) async {
+    await _adsBox.delete(id);
   }
 }
