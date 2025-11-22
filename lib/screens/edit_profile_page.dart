@@ -17,11 +17,13 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
+  // ✅ NOVO: Regex para telefone (igual ao usado no Login/Cadastro)
+  final RegExp _phoneRegex = RegExp(r'^[0-9\-\s\(\)\+]+$');
+
   // Controllers para pré-preencher e salvar dados
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _cityController;
-  late TextEditingController _emailController;
 
   // URL da foto (simulação)
   String? _photoUrl;
@@ -35,7 +37,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController = TextEditingController(text: user.name);
     _phoneController = TextEditingController(text: user.phone);
     _cityController = TextEditingController(text: user.city);
-    _emailController = TextEditingController(text: user.email);
     _photoUrl = user.photoUrl;
   }
 
@@ -44,30 +45,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController.dispose();
     _phoneController.dispose();
     _cityController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
-      // ✅ Acessa o UserService
       final userService = Provider.of<UserService>(context, listen: false);
 
-      // 1. Constrói o objeto atualizado (usando a lógica copyWith do modelo)
       final updatedUser = widget.userToEdit.copyWith(
         name: _nameController.text,
         phone: _phoneController.text,
         city: _cityController.text,
-        // Usamos ValueGetter para permitir que o valor seja setado como null (se o campo for esvaziado)
-        email: () =>
-            _emailController.text.isEmpty ? null : _emailController.text,
         photoUrl: () => _photoUrl,
+        password: widget.userToEdit.password,
       );
 
-      // 2. Chama o método de atualização do serviço, que dispara o notifyListeners
       userService.updateUser(updatedUser);
 
-      // Feedback visual
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Perfil de ${updatedUser.name} salvo com sucesso!'),
@@ -75,7 +69,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       );
 
-      // Retorna à tela de perfil, que irá reconstruir automaticamente
       Navigator.pop(context);
     }
   }
@@ -95,7 +88,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              // Placeholder de Foto para Edição (pode ser clicável para upload futuro)
+              // Placeholder de Foto para Edição
               _buildPhotoEditor(),
               const SizedBox(height: 30),
 
@@ -115,8 +108,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   labelText: 'Telefone (WhatsApp)*',
                 ),
                 keyboardType: TextInputType.phone,
-                validator: (value) =>
-                    value!.isEmpty ? 'O telefone é obrigatório.' : null,
+                validator: (value) {
+                  if (value!.isEmpty) return 'O telefone é obrigatório.';
+                  // ✅ CORREÇÃO: Aplica o regex de validação
+                  if (!_phoneRegex.hasMatch(value)) {
+                    return 'Use apenas números, parênteses ou hífens.';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
 
@@ -129,14 +128,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               const SizedBox(height: 15),
 
-              // --- Email (Opcional) ---
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email (Opcional)',
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
+              // ... (Botões de Salvar, etc.)
               const SizedBox(height: 30),
 
               // --- Botão de Salvar ---
@@ -186,7 +178,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         FloatingActionButton.small(
           onPressed: () {
             // 💡 Simular a troca/upload de foto
-            // Simula uma URL salva para fins visuais
             setState(() {
               _photoUrl =
                   'https://placehold.co/120x120/4CAF50/FFFFFF?text=EDITADA';

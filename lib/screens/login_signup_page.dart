@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Adicionado para futura integração
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import '../services/user_service.dart'; // Adicionado para persistir o usuário
-import '../models/user.dart'; // Adicionado para criar o objeto User
-import 'main_navigation_screen.dart'; // Para navegação após login
+import '../services/user_service.dart';
+import '../models/user.dart';
+import 'main_navigation_screen.dart';
 
 class LoginSignupPage extends StatefulWidget {
   const LoginSignupPage({super.key});
@@ -14,67 +14,103 @@ class LoginSignupPage extends StatefulWidget {
 
 class _LoginSignupPageState extends State<LoginSignupPage> {
   final _formKey = GlobalKey<FormState>();
-  bool _isLogin = true; // Alterna entre Login e Cadastro
+  final _passwordController = TextEditingController();
+
+  bool _isLogin = true;
 
   // Variáveis do Formulário
   String _name = '';
   String _phone = '';
   String _city = '';
-  String _email = '';
-  String _password = ''; // Usada apenas para validação e simulação
+  String _password = '';
 
-  // Simulação de autenticação com dados persistidos em memória
-  void _submitAuthForm() {
+  // Regex para telefone: aceita apenas números, +, -, (, ) e espaço.
+  final RegExp phoneRegex = RegExp(r'^[0-9\-\s\(\)\+]+$');
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // Lógica de autenticação com persistência
+  Future<void> _submitAuthForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     _formKey.currentState!.save();
 
     final userService = Provider.of<UserService>(context, listen: false);
+    ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
-    // --- SIMULAÇÃO DE LOGIN/CADASTRO E PERSISTÊNCIA ---
-
-    // 1. Cria um novo objeto User (no caso de Cadastro) ou pega o mock (no caso de Login)
-    final String userIdMock = 'user_${_phone.hashCode}';
-
-    User updatedUser;
+    ScaffoldFeatureController? snackbarController;
 
     if (_isLogin) {
-      // Mock: Se for login, apenas simula sucesso e carrega o usuário mockado
-      // Em um app real, buscaríamos no banco e verificaríamos a senha.
-      updatedUser = userService.currentUser.copyWith(id: userIdMock);
+      // --- LÓGICA DE LOGIN REAL ---
+
+      // 1. Chama o login no serviço para verificar a senha persistida
+      final loggedInUser = await userService.login(_phone, _password);
+
+      if (loggedInUser != null) {
+        // Sucesso
+        snackbarController = messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Login Sucedido! Redirecionando...'),
+            backgroundColor: AppTheme.primaryColor,
+          ),
+        );
+        await snackbarController.closed;
+
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        );
+      } else {
+        // Falha: Senha ou telefone incorretos
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha no Login: Telefone ou senha incorretos.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } else {
-      // Cadastro: Cria um novo objeto User com os dados do formulário
-      updatedUser = User(
-        id: userIdMock,
+      // --- LÓGICA DE CADASTRO ---
+      final newUser = User(
+        id: 'user_${_phone.hashCode}', // ID de persistência
         name: _name,
         phone: _phone,
         city: _city,
-        email: _email.isNotEmpty ? _email : null,
-        password: _password, // Armazena a senha (simulada)
+        password: _password,
+        photoUrl: null,
       );
+
+      final success = await userService.signup(newUser);
+
+      if (success) {
+        // Sucesso: Redireciona
+        snackbarController = messenger.showSnackBar(
+          SnackBar(
+            content: Text('Conta criada! Bem-vindo(a), $_name.'),
+            backgroundColor: AppTheme.primaryColor,
+          ),
+        );
+        await snackbarController.closed;
+
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        );
+      } else {
+        // Falha: Usuário já existe
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha no Cadastro: Telefone já cadastrado.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-
-    // 2. Persiste o usuário no serviço (Entrega 3)
-    userService.updateUser(updatedUser);
-
-    // 3. Feedback visual (usando todos os campos para resolver os avisos)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isLogin
-              // ✅ CORREÇÃO 1: Removida a barra invertida \
-              ? 'Login Sucedido! Telefone: $_phone'
-              : 'Cadastro Sucedido! Nome: $_name, Cidade: $_city, Senha (simulada): $_password, Email (opc): $_email',
-        ), // ✅ CORREÇÃO 2: Usando _city, _email, _password
-        backgroundColor: AppTheme.primaryColor,
-      ),
-    );
-
-    // 4. Navega para a Home (substituindo a tela atual)
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-    );
   }
 
   @override
@@ -96,7 +132,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Título
                 Text(
                   _isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta',
                   style: theme.textTheme.headlineSmall!.copyWith(
@@ -106,7 +141,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                 ),
                 const SizedBox(height: 30),
 
-                // --- CAMPOS DE CADASTRO (Apenas no modo Cadastro) ---
+                // --- CAMPOS DE CADASTRO ---
                 if (!_isLogin) ...[
                   // Nome (Obrigatório)
                   TextFormField(
@@ -120,56 +155,52 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Telefone (Obrigatório - Captura o telefone no modo Cadastro)
-                  TextFormField(
-                    key: const ValueKey('phone_cadastro'),
-                    decoration: const InputDecoration(
-                      labelText: 'Telefone (WhatsApp)*',
-                    ),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) =>
-                        value!.isEmpty ? 'Telefone é obrigatório.' : null,
-                    onSaved: (value) => _phone = value!,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Cidade (Obrigatório)
+                  // Cidade (Obrigatório) - Simula Localização Real (Editável)
                   TextFormField(
                     key: const ValueKey('city'),
-                    decoration: const InputDecoration(labelText: 'Cidade/UF*'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Cidade é obrigatória.' : null,
-                    onSaved: (value) => _city = value!,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Email (Opcional)
-                  TextFormField(
-                    key: const ValueKey('email'),
+                    initialValue: 'São Paulo, SP (Localização atual)',
                     decoration: const InputDecoration(
-                      labelText: 'Email (Opcional)',
+                      labelText: 'Cidade/UF* (Editável)',
+                      suffixIcon: Icon(
+                        Icons.location_on_outlined,
+                        color: AppTheme.primaryColor,
+                      ),
                     ),
-                    keyboardType: TextInputType.emailAddress,
-                    onSaved: (value) => _email = value!,
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return 'Cidade é obrigatória.';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) => _city = value!,
                   ),
                   const SizedBox(height: 15),
                 ],
 
-                // --- CAMPO DE LOGIN (Telefone para Login ou Cadastro, se não foi preenchido acima) ---
-                if (_isLogin)
-                  TextFormField(
-                    key: const ValueKey('auth_phone_login'),
-                    decoration: const InputDecoration(
-                      labelText: 'Telefone (Login)*',
-                    ),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) =>
-                        value!.isEmpty ? 'Telefone é obrigatório.' : null,
-                    onSaved: (value) => _phone = value!,
+                // --- TELEFONE (Login/Cadastro) ---
+                TextFormField(
+                  key: const ValueKey('phone_auth'),
+                  decoration: const InputDecoration(
+                    labelText: 'Telefone (Login/Cadastro)*',
                   ),
+                  keyboardType: TextInputType.phone, // ✅ Apenas para o teclado
+                  validator: (value) {
+                    if (value!.isEmpty) {
+                      return 'Telefone é obrigatório.';
+                    }
+                    // ✅ VALIDAÇÃO REAL: Verifica se contém apenas caracteres de telefone
+                    if (!phoneRegex.hasMatch(value)) {
+                      return 'Use apenas números, parênteses ou hífens.';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _phone = value!,
+                ),
                 const SizedBox(height: 15),
 
+                // --- SENHA ---
                 TextFormField(
+                  controller: _passwordController,
                   key: const ValueKey('password'),
                   decoration: const InputDecoration(labelText: 'Senha*'),
                   obscureText: true,
@@ -178,6 +209,27 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                       : null,
                   onSaved: (value) => _password = value!,
                 ),
+                const SizedBox(height: 15),
+
+                // --- CONFIRMAÇÃO DE SENHA (Apenas no modo Cadastro) ---
+                if (!_isLogin)
+                  TextFormField(
+                    key: const ValueKey('confirm_password'),
+                    decoration: const InputDecoration(
+                      labelText: 'Confirme a Senha*',
+                    ),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return 'Confirmação de senha é obrigatória.';
+                      }
+                      // Valida se as senhas coincidem
+                      if (value != _passwordController.text) {
+                        return 'As senhas não coincidem.';
+                      }
+                      return null;
+                    },
+                  ),
                 const SizedBox(height: 30),
 
                 // --- BOTÃO PRINCIPAL ---

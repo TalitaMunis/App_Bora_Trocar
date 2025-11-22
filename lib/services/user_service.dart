@@ -4,17 +4,16 @@ import '../models/user.dart'; // Importa o modelo User
 
 // Dados iniciais (O ÚNICO USUÁRIO MOCK PERMANENTE É O CONVIDADO/GUEST)
 final User initialGuestUser = User(
-  id: 'guest', // ID fixo para status 'deslogado'
+  id: 'guest',
   name: "Convidado",
   phone: "N/A",
   city: "N/A",
-  email: null,
   password: "", // Senha vazia para convidado
   photoUrl: null,
 );
 
 const String userBoxName = 'usersBox';
-const String userKey = 'profile'; // Chave única para o objeto User
+const String userKey = 'profile';
 const String registeredUsersBoxName =
     'registeredUsers'; // ✅ NOVA BOX para cadastros globais
 
@@ -27,16 +26,16 @@ class UserService extends ChangeNotifier {
   _registeredUsersBox; // ✅ Box que armazena todos os usuários cadastrados
 
   UserService() {
-    _initUserBox();
+    _initHive();
   }
 
-  Future<void> _initUserBox() async {
-    // 1. Abre a Box
+  Future<void> _initHive() async {
+    // 1. Abre Boxes
     _userBox = await Hive.openBox<User>(userBoxName);
     _registeredUsersBox = await Hive.openBox<User>(registeredUsersBoxName);
 
     if (_userBox.isEmpty) {
-      // Se a Box estiver vazia, salva APENAS o usuário convidado
+      // Garante que o estado inicial é 'guest' (convidado)
       await _userBox.put(userKey, initialGuestUser);
     }
 
@@ -44,19 +43,17 @@ class UserService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ Verifica se o usuário logado não é o 'guest'
+  // ✅ Getter: Verifica se o usuário logado não é o 'guest'
   bool get isUserLoggedIn {
     if (!_isInitialized) return false;
-    // O usuário é considerado logado se o ID for diferente de 'guest'
     return _userBox.get(userKey)?.id != 'guest';
   }
 
-  // Retorna o objeto User atual (seja ele o logado ou o convidado)
   User get currentUser {
     if (!_isInitialized) {
       return initialGuestUser;
     }
-    // O '!' é seguro, pois garantimos que a Box nunca está vazia no _initUserBox.
+    // Retorna o usuário logado persistido no Hive
     return _userBox.get(userKey)!;
   }
 
