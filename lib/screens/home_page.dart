@@ -5,7 +5,6 @@ import '../widgets/simple_listing_card.dart';
 import '../theme/app_theme.dart';
 import 'detail_screen.dart';
 
-// ✅ Alterado de StatelessWidget para StatefulWidget
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -14,22 +13,31 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // ✅ 1. Cria o Controller Apenas Uma Vez
   late TextEditingController _searchController;
+  // Estado para armazenar a ordenação visualmente
+  String _currentSortDisplay = 'Vencimento (Mais Próximo)';
+
+  // Opções de Categorias Mockadas (Deve refletir as opções de cadastro)
+  final List<String> _availableCategories = const [
+    'Pães e Massas',
+    'Laticínios',
+    'Frutas e Vegetais',
+    'Carnes e Proteínas',
+    'Outros',
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Inicializa o controller
     _searchController = TextEditingController();
-
-    // 💡 IMPORTANTE: Adiciona um listener para atualizar o termo de busca no Provider.
-    // Isso garante que o estado de busca e o TextField estejam sempre sincronizados.
     _searchController.addListener(_onSearchChanged);
+
+    // Inicializa o estado de ordenação visual com o valor atual do serviço
+    final adsService = Provider.of<AdsService>(context, listen: false);
+    _updateSortDisplay(adsService.currentSortBy, adsService.expiryDirection);
   }
 
   void _onSearchChanged() {
-    // Acessa o AdsService e atualiza o termo de busca
     final adsService = Provider.of<AdsService>(context, listen: false);
     adsService.setSearchTerm(_searchController.text);
   }
@@ -41,25 +49,64 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  void _updateSortDisplay(String sortBy, String direction) {
+    setState(() {
+      final directionText = direction == 'asc'
+          ? 'Mais Próximo'
+          : 'Mais Distante';
+      if (sortBy == 'expiry') {
+        _currentSortDisplay = 'Vencimento ($directionText)';
+      } else if (sortBy == 'proximity') {
+        _currentSortDisplay =
+            'Proximidade (${direction == 'asc' ? 'Mais Perto' : 'Mais Longe'})';
+      }
+    });
+  }
+
+  // 🎯 LÓGICA DO FILTRO AVANÇADO (AGORA UM MODAL COMPLETO)
+  Future<void> _showFilterModal(
+    BuildContext context,
+    AdsService adsService,
+  ) async {
+    // Usa um StatefulWidget para o modal para gerenciar o estado temporário
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => FilterModal(
+        adsService: adsService,
+        availableCategories: _availableCategories,
+        // Passa o estado atual para o modal
+        initialSortBy: adsService.currentSortBy,
+        initialDirection: adsService.expiryDirection,
+        initialSelectedCategories: adsService.selectedCategories,
+      ),
+    );
+
+    if (result != null && result is Map) {
+      // 1. Aplica as mudanças no serviço
+      adsService.setSort(result['sortBy'], result['direction']);
+      adsService.setCategoryFilter(result['categories']);
+
+      // 2. Atualiza o indicador visual
+      _updateSortDisplay(result['sortBy'], result['direction']);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Usamos o Consumer para ouvir as mudanças na busca e na lista
     return Consumer<AdsService>(
       builder: (context, adsService, child) {
-        // 🎯 2. TRATAMENTO DE LOADING
         if (!adsService.isInitialized) {
           return const Center(
             child: CircularProgressIndicator(color: AppTheme.primaryColor),
           );
         }
-        // Usar a lista filtrada
+
         final listings = adsService.filteredListings;
 
-        // Sincroniza o texto do Controller com o estado do Provider APENAS SE
-        // o texto for diferente (evita loop e problemas de direção).
+        // Sincroniza o texto do Controller
         if (_searchController.text != adsService.searchTerm &&
             adsService.searchTerm.isNotEmpty) {
-          // Define o texto sem mover o cursor para o final
           _searchController.text = adsService.searchTerm;
         } else if (adsService.searchTerm.isEmpty &&
             _searchController.text.isNotEmpty) {
@@ -69,45 +116,73 @@ class _HomePageState extends State<HomePage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- 1. Campo de Busca (CORRIGIDO E OTIMIZADO) ---
+            // --- 1. BARRA DE BUSCA E FILTRO ---
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
                 vertical: 12.0,
               ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10.0),
-                  border: Border.all(color: AppTheme.dividerColor),
-                ),
-                child: TextField(
-                  // ✅ Usando o controller persistente
-                  controller: _searchController,
-
-                  // ✅ Força a direção do texto para LTR
-                  textDirection: TextDirection.ltr,
-
-                  // ❌ Removido o onChanged, pois o listener do controller faz o trabalho.
-                  decoration: const InputDecoration(
-                    hintText: 'Buscar alimentos/Localidade',
-                    hintStyle: TextStyle(color: Colors.grey),
-                    prefixIcon: Icon(Icons.search, color: Colors.grey),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 10.0),
+              child: Row(
+                children: [
+                  // Campo de Busca
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10.0),
+                        border: Border.all(color: AppTheme.dividerColor),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        textDirection: TextDirection.ltr,
+                        decoration: const InputDecoration(
+                          hintText: 'Buscar alimentos/Localidade',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          prefixIcon: Icon(Icons.search, color: Colors.grey),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 10.0),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+
+                  // BOTÃO DE FILTRO AVANÇADO
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.filter_list, color: Colors.white),
+                      onPressed: () => _showFilterModal(context, adsService),
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            // --- 2. Feed de Anúncios (ListView Reativo e Filtrado) ---
+            // --- 2. INDICADOR DE ORDENAÇÃO E FILTROS ATIVOS ---
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
+              child: Text(
+                'Ordenado por: $_currentSortDisplay${adsService.selectedCategories.isNotEmpty ? ' | Filtros: ${adsService.selectedCategories.length}' : ''}',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ),
+
+            // --- 3. Feed de Anúncios ---
             Expanded(
               child: listings.isEmpty
                   ? Center(
                       child: Text(
-                        adsService.searchTerm.isEmpty
+                        adsService.searchTerm.isEmpty &&
+                                adsService.selectedCategories.isEmpty
                             ? 'Nenhum anúncio disponível no momento.'
-                            : 'Nenhum resultado encontrado para "${_searchController.text}".',
+                            : 'Nenhum resultado encontrado.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.grey),
                       ),
@@ -135,6 +210,187 @@ class _HomePageState extends State<HomePage> {
           ],
         );
       },
+    );
+  }
+}
+
+// ----------------------------------------------------
+// WIDGET DO MODAL DE FILTRO AVANÇADO
+// ----------------------------------------------------
+
+class FilterModal extends StatefulWidget {
+  final AdsService adsService;
+  final List<String> availableCategories;
+  final String initialSortBy;
+  final String initialDirection;
+  final Set<String> initialSelectedCategories;
+
+  const FilterModal({
+    super.key,
+    required this.adsService,
+    required this.availableCategories,
+    required this.initialSortBy,
+    required this.initialDirection,
+    required this.initialSelectedCategories,
+  });
+
+  @override
+  State<FilterModal> createState() => _FilterModalState();
+}
+
+class _FilterModalState extends State<FilterModal> {
+  late String _sortBy;
+  late String _direction;
+  late Set<String> _selectedCategories;
+
+  @override
+  void initState() {
+    super.initState();
+    _sortBy = widget.initialSortBy;
+    _direction = widget.initialDirection;
+    _selectedCategories = Set.from(widget.initialSelectedCategories);
+  }
+
+  void _applyFilters() {
+    // Retorna os filtros selecionados para a HomePage
+    Navigator.pop(context, {
+      'sortBy': _sortBy,
+      'direction': _direction,
+      'categories': _selectedCategories,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          // --- TÍTULO ---
+          Text(
+            'Filtros Avançados',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 20),
+
+          // --- 1. ORDENAÇÃO PRINCIPAL ---
+          Text(
+            'Ordenar por',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _buildSortChip('expiry', 'Vencimento'),
+              const SizedBox(width: 8),
+              _buildSortChip('proximity', 'Proximidade'),
+            ],
+          ),
+          const Divider(height: 30),
+
+          // --- 2. DIREÇÃO DA ORDENAÇÃO ---
+          Text(
+            'Direção',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _buildDirectionChip(
+                'asc',
+                _sortBy == 'expiry' ? 'Mais Próximo' : 'Mais Perto',
+              ),
+              const SizedBox(width: 8),
+              _buildDirectionChip(
+                'desc',
+                _sortBy == 'expiry' ? 'Mais Distante' : 'Mais Longe',
+              ),
+            ],
+          ),
+          const Divider(height: 30),
+
+          // --- 3. FILTRAR POR CATEGORIA ---
+          Text(
+            'Filtrar por Categoria',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8.0,
+            children: widget.availableCategories.map((category) {
+              return FilterChip(
+                label: Text(category),
+                selected: _selectedCategories.contains(category),
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedCategories.add(category);
+                    } else {
+                      _selectedCategories.remove(category);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 30),
+
+          // --- BOTÃO APLICAR ---
+          ElevatedButton(
+            onPressed: _applyFilters,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+            child: const Text('Aplicar Filtros'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSortChip(String value, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _sortBy == value,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _sortBy = value;
+          });
+        }
+      },
+      selectedColor: AppTheme.primaryLightColor,
+      labelStyle: TextStyle(
+        color: _sortBy == value ? AppTheme.primaryColor : Colors.black87,
+      ),
+    );
+  }
+
+  Widget _buildDirectionChip(String value, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _direction == value,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _direction = value;
+          });
+        }
+      },
+      selectedColor: AppTheme.primaryLightColor,
+      labelStyle: TextStyle(
+        color: _direction == value ? AppTheme.primaryColor : Colors.black87,
+      ),
     );
   }
 }

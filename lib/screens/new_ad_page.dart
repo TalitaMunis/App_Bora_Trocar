@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
 import '../theme/app_theme.dart';
 import '../services/ads_service.dart';
 import '../models/food_listing.dart';
@@ -33,7 +32,6 @@ class _NewAdPageState extends State<NewAdPage> {
   String _description = '';
   String? _category;
   DateTime _expiryDate = DateTime.now().add(const Duration(days: 1));
-
   String _quantityNumber = '';
   String _quantityUnit = 'unidades';
 
@@ -199,6 +197,7 @@ class _NewAdPageState extends State<NewAdPage> {
       isMockUserOwner: isEditing ? widget.listingToEdit!.isMockUserOwner : true,
       // ✅ CORREÇÃO 1: Passa o valor calculado para o construtor
       statusProximidadeVencimento: computeStatusProximidade(_expiryDate),
+      category: _category, // ✅ Campo opcional
     );
 
     // 2. Lógica de decisão: Edição ou Criação
