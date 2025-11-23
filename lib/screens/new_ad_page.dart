@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../services/ads_service.dart';
+import '../services/user_service.dart';
 import '../models/food_listing.dart';
 import '../services/image_service.dart';
 
@@ -183,6 +184,10 @@ class _NewAdPageState extends State<NewAdPage> {
     final adsService = Provider.of<AdsService>(context, listen: false);
     final isEditing = widget.listingToEdit != null;
 
+    // 🎯 ID do criador: Usa o ID do usuário logado (Provider)
+    final userService = Provider.of<UserService>(context, listen: false);
+    final creatorId = userService.currentUser.id;
+
     // 1. Constrói o objeto (Novo ou Atualizado)
     final listingToSave = FoodListing(
       id: isEditing ? widget.listingToEdit!.id : 0,
@@ -194,6 +199,9 @@ class _NewAdPageState extends State<NewAdPage> {
       expiryDate: _expiryDate,
       contactInfo: _contactInfoMock,
       imageUrl: _selectedImageUrl,
+      creatorUserId: isEditing
+          ? widget.listingToEdit!.creatorUserId
+          : creatorId,
       isMockUserOwner: isEditing ? widget.listingToEdit!.isMockUserOwner : true,
       // ✅ CORREÇÃO 1: Passa o valor calculado para o construtor
       statusProximidadeVencimento: computeStatusProximidade(_expiryDate),

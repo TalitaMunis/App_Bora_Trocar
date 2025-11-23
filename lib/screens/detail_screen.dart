@@ -4,11 +4,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/food_listing.dart';
 import '../services/ads_service.dart';
+import '../services/user_service.dart'; // ✅ UserService
 import '../theme/app_theme.dart';
 import 'new_ad_page.dart';
-import '../utils/auth_check.dart'; // ✅ IMPORTANTE: Utilitário de checagem
+import '../utils/auth_check.dart';
 
-class DetailScreen extends StatelessWidget {
+// Conversão para StatefulWidget para gerenciar o nome do anunciante
+class DetailScreen extends StatefulWidget {
   final FoodListing listing;
   final bool isUserOwner;
 
@@ -17,6 +19,66 @@ class DetailScreen extends StatelessWidget {
     required this.listing,
     this.isUserOwner = false,
   });
+
+  @override
+  State<DetailScreen> createState() => _DetailScreenState();
+}
+
+class _DetailScreenState extends State<DetailScreen> {
+  // Estado para armazenar o nome do anunciante
+  String _advertiserName = 'Carregando...';
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicia a busca do nome do anunciante
+    _loadAdvertiserName();
+  }
+
+  // 🎯 LÓGICA DE BUSCA DO NOME DO ANUNCIANTE
+  Future<void> _loadAdvertiserName() async {
+    // 1. A chave de busca (telefone) é o contactInfo no nosso mock
+    final userIdKey = widget.listing.contactInfo;
+
+    // 2. Busca o perfil do UserService
+    // Usamos listen: false porque a busca é assíncrona
+    final userService = Provider.of<UserService>(context, listen: false);
+
+    // Se o usuário for o dono (ex: editando seu próprio anúncio), usamos o nome logado
+    if (widget.isUserOwner) {
+      if (mounted) {
+        setState(() {
+          _advertiserName = userService.currentUser.name;
+        });
+      }
+      return;
+    }
+
+    // Simulação de busca por usuário de terceiros (usando o contactInfo como chave de busca)
+    final advertiser = userService.getUserById(userIdKey);
+
+    if (advertiser != null) {
+      if (mounted) {
+        setState(() {
+          _advertiserName = advertiser.name;
+        });
+      }
+    } else {
+      // Mock fallback se o usuário não for encontrado no cadastro Hive
+      if (mounted) {
+        setState(() {
+          // Simulação de nome de terceiros para anúncios que não são do usuário
+          if (widget.listing.id % 2 == 0) {
+            _advertiserName = 'Juliana L.';
+          } else if (widget.listing.id % 3 == 0) {
+            _advertiserName = 'Roberto G.';
+          } else {
+            _advertiserName = 'João M.';
+          }
+        });
+      }
+    }
+  }
 
   // --- Lógica de Formatação ---
   String _formatExpiry(DateTime date) {
@@ -30,10 +92,10 @@ class DetailScreen extends StatelessWidget {
     return 'Vence em $difference dias';
   }
 
-  // --- Ação de Contato (Lógica que será chamada APÓS o checkAuth) ---
+  // --- Ação de Contato ---
   Future<void> _launchWhatsApp(BuildContext context, String contact) async {
     final uri = Uri.parse(
-      'https://wa.me/$contact?text=Olá! Vi o seu anúncio de ${listing.title} no Bora Trocar!. Ainda está disponível?',
+      'https://wa.me/$contact?text=Olá! Vi o seu anúncio de ${widget.listing.title} no Bora Trocar!. Ainda está disponível?',
     );
 
     if (await canLaunchUrl(uri)) {
@@ -55,7 +117,7 @@ class DetailScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmar Exclusão'),
         content: Text(
-          'Tem certeza que deseja excluir o anúncio "${listing.title}"? Esta ação é irreversível.',
+          'Tem certeza que deseja excluir o anúncio "${widget.listing.title}"? Esta ação é irreversível.',
         ),
         actions: [
           TextButton(
@@ -74,13 +136,15 @@ class DetailScreen extends StatelessWidget {
     );
 
     if (shouldDelete == true) {
-      adsService.deleteListing(listing.id);
+      adsService.deleteListing(widget.listing.id);
 
       if (!context.mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Anúncio "${listing.title}" excluído com sucesso!'),
+          content: Text(
+            'Anúncio "${widget.listing.title}" excluído com sucesso!',
+          ),
         ),
       );
     }
@@ -89,7 +153,9 @@ class DetailScreen extends StatelessWidget {
   // --- Ação de Edição (RF03) ---
   void _editListing(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => NewAdPage(listingToEdit: listing)),
+      MaterialPageRoute(
+        builder: (_) => NewAdPage(listingToEdit: widget.listing),
+      ),
     );
   }
 
@@ -99,19 +165,16 @@ class DetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(listing.title),
+        title: Text(widget.listing.title),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
 
-        // Ações de gerenciamento (Editar/Excluir) aparecem na AppBar
-        actions: isUserOwner
+        actions: widget.isUserOwner
             ? [
-                // Botão de Editar (RF03)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _editListing(context),
                 ),
-                // Botão de Excluir (RF04)
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => _confirmAndDelete(context),
@@ -124,45 +187,61 @@ class DetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Imagem (Placeholder/NetworkImage) ---
+            // --- Imagem ---
             Image.network(
-              listing.imageUrl ??
+              widget.listing.imageUrl ??
                   'https://placehold.co/600x400/999999/FFFFFF?text=Sem+Foto',
               height: 250,
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 250,
-                  color: AppTheme.imagePlaceholder,
-                  child: const Center(
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
-                  ),
-                );
+                return Container(height: 250, color: AppTheme.imagePlaceholder);
               },
             ),
             const SizedBox(height: 20),
 
-            // --- Título e Status de Validade ---
-            Text(listing.title, style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 10),
+            // --- Título ---
+            Text(widget.listing.title, style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 4),
+
+            // ✅ NOME DO ANUNCIANTE (Visualização prioritária)
+            Row(
+              children: [
+                const Icon(
+                  Icons.person_outline,
+                  size: 20,
+                  color: Colors.black54,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _advertiserName, // ✅ EXIBE O NOME ATUALIZADO
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 30),
+
+            // --- Status de Validade ---
             Container(
-              // Contêiner para estilizar o status de validade
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _formatExpiry(listing.expiryDate).contains('VENCIDO')
+                color:
+                    _formatExpiry(widget.listing.expiryDate).contains('VENCIDO')
                     ? AppTheme.alertCriticalBackground
                     : AppTheme.alertWarningBackground,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                _formatExpiry(listing.expiryDate),
+                _formatExpiry(widget.listing.expiryDate),
                 style: TextStyle(
-                  color: _formatExpiry(listing.expiryDate).contains('VENCIDO')
+                  color:
+                      _formatExpiry(
+                        widget.listing.expiryDate,
+                      ).contains('VENCIDO')
                       ? AppTheme.alertCritical
                       : AppTheme.alertWarning,
                   fontWeight: FontWeight.bold,
@@ -170,15 +249,35 @@ class DetailScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+
+            // --- Categoria ---
+            Row(
+              children: [
+                const Icon(
+                  Icons.category_outlined,
+                  size: 20,
+                  color: Colors.black54,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Categoria: ${widget.listing.category ?? 'Não Definida'}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 30),
 
             // --- Quantidade ---
-            const SizedBox(height: 20),
             const Text(
               'Quantidade:',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
-            Text(listing.quantity),
+            Text(widget.listing.quantity),
             const SizedBox(height: 20),
 
             // --- Descrição ---
@@ -187,18 +286,17 @@ class DetailScreen extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
-            Text(listing.description),
+            Text(widget.listing.description),
             const SizedBox(height: 30),
 
-            // --- Botão de Contato (Para usuários NÃO-DONOS) ---
-            if (!isUserOwner)
+            // --- Botão de Contato ---
+            if (!widget.isUserOwner)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // ✅ CORREÇÃO: Se o usuário estiver logado, continua para o WhatsApp. Caso contrário, redireciona para o Login.
                     if (checkAuthAndNavigate(context)) {
-                      _launchWhatsApp(context, listing.contactInfo);
+                      _launchWhatsApp(context, widget.listing.contactInfo);
                     }
                   },
                   icon: const Icon(Icons.chat),

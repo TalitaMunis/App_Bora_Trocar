@@ -8,22 +8,20 @@ final User initialGuestUser = User(
   name: "Convidado",
   phone: "N/A",
   city: "N/A",
-  password: "", // Senha vazia para convidado
+  password: "",
   photoUrl: null,
 );
 
 const String userBoxName = 'usersBox';
 const String userKey = 'profile';
-const String registeredUsersBoxName =
-    'registeredUsers'; // Box que guarda TODOS os cadastros
+const String registeredUsersBoxName = 'registeredUsers';
 
 class UserService extends ChangeNotifier {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
   late Box<User> _userBox;
-  late Box<User>
-  _registeredUsersBox; // Box que armazena todos os usuários cadastrados
+  late Box<User> _registeredUsersBox;
 
   UserService() {
     _initHive();
@@ -43,6 +41,16 @@ class UserService extends ChangeNotifier {
 
     _isInitialized = true;
     notifyListeners();
+  }
+
+  // LEITURA DE PERFIL POR ID (NOVO)
+  // -------------------------------------------------------------
+
+  /// 🎯 Busca um usuário cadastrado pelo seu ID (chave da Box).
+  /// Retorna o User ou null se não encontrado.
+  User? getUserById(String phoneKey) {
+    // Usamos o telefone (que é a chave de persistência) como ID único
+    return _registeredUsersBox.get(phoneKey);
   }
 
   // ✅ Getter: Verifica se o usuário logado não é o 'guest'

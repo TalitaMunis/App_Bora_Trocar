@@ -32,6 +32,9 @@ class FoodListing {
   final String? category; // ✅ NOVO CAMPO: Categoria
 
   @HiveField(9)
+  final String creatorUserId; // ✅ NOVO CAMPO: ID do criador
+
+  @HiveField(10)
   final bool isMockUserOwner;
 
   FoodListing({
@@ -44,6 +47,7 @@ class FoodListing {
     required this.contactInfo,
     required this.quantity,
     this.category, // ✅ Adicionado ao construtor
+    required this.creatorUserId, // ✅ Requerido no construtor
     this.isMockUserOwner = false,
   });
 
@@ -57,6 +61,7 @@ class FoodListing {
     String? contactInfo,
     String? quantity,
     String? category, // ✅ Adicionado ao copyWith
+    String? creatorUserId,
     bool? isMockUserOwner,
   }) {
     return FoodListing(
@@ -70,6 +75,7 @@ class FoodListing {
       contactInfo: contactInfo ?? this.contactInfo,
       quantity: quantity ?? this.quantity,
       category: category ?? this.category, // ✅ Usado no copyWith
+      creatorUserId: creatorUserId ?? this.creatorUserId,
       isMockUserOwner: isMockUserOwner ?? this.isMockUserOwner,
     );
   }
@@ -96,6 +102,7 @@ final List<FoodListing> mockListings = [
     contactInfo: '5511987654321',
     imageUrl: _paoIntegralUrl,
     category: 'Pães e Massas', // ✅ Novo Campo
+    creatorUserId: 'mock_user_1',
     isMockUserOwner: true,
   ),
   FoodListing(
@@ -108,6 +115,7 @@ final List<FoodListing> mockListings = [
     contactInfo: '5511987654321',
     imageUrl: _leiteUrl,
     category: 'Laticínios', // ✅ Novo Campo
+    creatorUserId: 'mock_user_2',
     isMockUserOwner: false,
   ),
   FoodListing(
@@ -120,6 +128,7 @@ final List<FoodListing> mockListings = [
     contactInfo: '5511987654321',
     imageUrl: _frangoUrl,
     category: 'Carnes e Proteínas', // ✅ Novo Campo
+    creatorUserId: 'mock_user_3',
     isMockUserOwner: true,
   ),
   FoodListing(
@@ -132,6 +141,7 @@ final List<FoodListing> mockListings = [
     contactInfo: '5511987654321',
     imageUrl: _mangaUrl,
     category: 'Frutas e Vegetais', // ✅ Novo Campo
+    creatorUserId: 'mock_user_4',
     isMockUserOwner: false,
   ),
 ];
