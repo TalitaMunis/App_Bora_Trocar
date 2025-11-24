@@ -186,7 +186,8 @@ class _NewAdPageState extends State<NewAdPage> {
 
     // 🎯 ID do criador: Usa o ID do usuário logado (Provider)
     final userService = Provider.of<UserService>(context, listen: false);
-    final creatorId = userService.currentUser.id;
+    // 🎯 CORREÇÃO 1: O ID do criador AGORA É O TELEFONE (Chave de busca do Hive)
+    final creatorIdKey = userService.currentUser.phone;
 
     // 1. Constrói o objeto (Novo ou Atualizado)
     final listingToSave = FoodListing(
@@ -199,13 +200,11 @@ class _NewAdPageState extends State<NewAdPage> {
       expiryDate: _expiryDate,
       contactInfo: _contactInfoMock,
       imageUrl: _selectedImageUrl,
-      creatorUserId: isEditing
-          ? widget.listingToEdit!.creatorUserId
-          : creatorId,
       isMockUserOwner: isEditing ? widget.listingToEdit!.isMockUserOwner : true,
-      // ✅ CORREÇÃO 1: Passa o valor calculado para o construtor
+      category: _category,
+      // ✅ CORREÇÃO CRÍTICA: Salva o TELEFONE como ID do criador
+      creatorUserId: creatorIdKey,
       statusProximidadeVencimento: computeStatusProximidade(_expiryDate),
-      category: _category, // ✅ Campo opcional
     );
 
     // 2. Lógica de decisão: Edição ou Criação

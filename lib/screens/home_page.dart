@@ -17,6 +17,9 @@ class _HomePageState extends State<HomePage> {
   // Estado para armazenar a ordenação visualmente
   String _currentSortDisplay = 'Vencimento (Mais Próximo)';
 
+  // ✅ NOVO: Adiciona um FocusNode para controlar o foco do teclado
+  final FocusNode _searchFocusNode = FocusNode();
+
   // Opções de Categorias Mockadas (Deve refletir as opções de cadastro)
   final List<String> _availableCategories = const [
     'Pães e Massas',
@@ -42,10 +45,20 @@ class _HomePageState extends State<HomePage> {
     adsService.setSearchTerm(_searchController.text);
   }
 
+  // ✅ NOVO MÉTODO: Ação ao clicar na lupa
+  void _onSearchIconTapped() {
+    // 1. Garante que a busca seja acionada com o texto atual do campo
+    _onSearchChanged();
+
+    // 2. Remove o foco do campo para fechar o teclado, simulando a conclusão da pesquisa
+    _searchFocusNode.unfocus();
+  }
+
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose(); // ✅ DISPOSE DO FOCUSNODE
     super.dispose();
   }
 
@@ -134,13 +147,21 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: TextField(
                         controller: _searchController,
+                        focusNode: _searchFocusNode, // ✅ Usa o FocusNode
                         textDirection: TextDirection.ltr,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Buscar alimentos/Localidade',
-                          hintStyle: TextStyle(color: Colors.grey),
-                          prefixIcon: Icon(Icons.search, color: Colors.grey),
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          // 🎯 CORREÇÃO: Usa IconButton em vez de Icon
+                          prefixIcon: IconButton(
+                            icon: const Icon(Icons.search, color: Colors.grey),
+                            onPressed:
+                                _onSearchIconTapped, // ✅ Chama a ação de busca
+                          ),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 10.0),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10.0,
+                          ),
                         ),
                       ),
                     ),

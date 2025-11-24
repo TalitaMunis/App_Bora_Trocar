@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../models/food_listing.dart';
 import '../services/ads_service.dart';
 import '../services/user_service.dart'; // ✅ UserService
@@ -37,14 +36,13 @@ class _DetailScreenState extends State<DetailScreen> {
 
   // 🎯 LÓGICA DE BUSCA DO NOME DO ANUNCIANTE
   Future<void> _loadAdvertiserName() async {
-    // 1. A chave de busca (telefone) é o contactInfo no nosso mock
-    final userIdKey = widget.listing.contactInfo;
+    // 1. ✅ CHAVE CORRIGIDA: Usa o creatorUserId do anúncio
+    final creatorId = widget.listing.creatorUserId;
 
-    // 2. Busca o perfil do UserService
-    // Usamos listen: false porque a busca é assíncrona
+    // 2. Busca o perfil do UserService (listen: false)
     final userService = Provider.of<UserService>(context, listen: false);
 
-    // Se o usuário for o dono (ex: editando seu próprio anúncio), usamos o nome logado
+    // Se o usuário for o dono (ex: editando seu próprio anúncio), usa o nome logado
     if (widget.isUserOwner) {
       if (mounted) {
         setState(() {
@@ -54,8 +52,8 @@ class _DetailScreenState extends State<DetailScreen> {
       return;
     }
 
-    // Simulação de busca por usuário de terceiros (usando o contactInfo como chave de busca)
-    final advertiser = userService.getUserById(userIdKey);
+    // 3. Busca o perfil pelo ID do criador
+    final advertiser = userService.getUserById(creatorId);
 
     if (advertiser != null) {
       if (mounted) {
@@ -64,17 +62,10 @@ class _DetailScreenState extends State<DetailScreen> {
         });
       }
     } else {
-      // Mock fallback se o usuário não for encontrado no cadastro Hive
+      // Mock fallback: Se o usuário foi deletado ou não foi encontrado
       if (mounted) {
         setState(() {
-          // Simulação de nome de terceiros para anúncios que não são do usuário
-          if (widget.listing.id % 2 == 0) {
-            _advertiserName = 'Juliana L.';
-          } else if (widget.listing.id % 3 == 0) {
-            _advertiserName = 'Roberto G.';
-          } else {
-            _advertiserName = 'João M.';
-          }
+          _advertiserName = 'Anunciante Não Encontrado';
         });
       }
     }

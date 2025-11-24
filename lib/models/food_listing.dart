@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 
 part 'food_listing.g.dart';
 
-@HiveType(typeId: 2)
+@HiveType(typeId: 0)
 class FoodListing {
   @HiveField(0)
   final int id;

@@ -14,43 +14,32 @@ final User initialGuestUser = User(
 
 const String userBoxName = 'usersBox';
 const String userKey = 'profile';
-const String registeredUsersBoxName = 'registeredUsers';
+const String registeredUsersBoxName =
+    'registeredUsers'; // Box que guarda TODOS os cadastros
 
 class UserService extends ChangeNotifier {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
   late Box<User> _userBox;
-  late Box<User> _registeredUsersBox;
+  late Box<User>
+  _registeredUsersBox; // Box que armazena todos os usuários cadastrados
 
   UserService() {
     _initHive();
   }
 
   Future<void> _initHive() async {
-    // 1. ✅ Abre Boxes de forma persistente (aguarda o carregamento)
+    // 1. Abre Boxes
     _userBox = await Hive.openBox<User>(userBoxName);
-    _registeredUsersBox = await Hive.openBox<User>(
-      registeredUsersBoxName,
-    ); // 🎯 ABERTURA CRÍTICA
+    _registeredUsersBox = await Hive.openBox<User>(registeredUsersBoxName);
 
     if (_userBox.isEmpty) {
-      // Garante que o estado inicial é 'guest' (convidado)
       await _userBox.put(userKey, initialGuestUser);
     }
 
     _isInitialized = true;
     notifyListeners();
-  }
-
-  // LEITURA DE PERFIL POR ID (NOVO)
-  // -------------------------------------------------------------
-
-  /// 🎯 Busca um usuário cadastrado pelo seu ID (chave da Box).
-  /// Retorna o User ou null se não encontrado.
-  User? getUserById(String phoneKey) {
-    // Usamos o telefone (que é a chave de persistência) como ID único
-    return _registeredUsersBox.get(phoneKey);
   }
 
   // ✅ Getter: Verifica se o usuário logado não é o 'guest'
@@ -63,29 +52,33 @@ class UserService extends ChangeNotifier {
     if (!_isInitialized) {
       return initialGuestUser;
     }
-    // Retorna o usuário logado persistido no Hive
     return _userBox.get(userKey)!;
   }
 
   // -------------------------------------------------------------
-  // AUTENTICAÇÃO (VALORES PERSISTENTES)
+  // LEITURA DE PERFIL POR ID (CORRIGIDA)
+  // -------------------------------------------------------------
+
+  /// 🎯 Busca um usuário cadastrado pelo seu Telefone/Chave de Persistência.
+  /// A chave de persistência é o número de telefone (User.phone).
+  User? getUserById(String phoneKey) {
+    // ✅ CORREÇÃO: Busca o usuário diretamente na Box de Registrados usando a chave
+    return _registeredUsersBox.get(phoneKey);
+  }
+
+  // -------------------------------------------------------------
+  // AUTENTICAÇÃO (MÉTODOS CUIDADOSAMENTE AJUSTADOS)
   // -------------------------------------------------------------
 
   /// 🎯 Realiza o Cadastro de um novo usuário
-  /// Retorna true se o cadastro foi bem-sucedido, false se o telefone já existe.
-  /// 🎯 Realiza o Cadastro de um novo usuário
   Future<bool> signup(User newUser) async {
     // 1. Verifica se o telefone já existe
-    // ✅ CORREÇÃO: Busca por telefone na BOX de usuários registrados
     if (_registeredUsersBox.values.any((user) => user.phone == newUser.phone)) {
       return false; // Usuário já existe
     }
 
-    // 2. Salva o novo usuário na Box de usuários registrados (a Box já foi aberta no _initHive)
-    await _registeredUsersBox.put(
-      newUser.phone,
-      newUser,
-    ); // ✅ Usa o telefone como chave
+    // 2. Salva o novo usuário na Box usando o TELEFONE como chave de persistência
+    await _registeredUsersBox.put(newUser.phone, newUser);
 
     // 3. Loga o novo usuário imediatamente
     await updateUser(newUser);
@@ -95,21 +88,17 @@ class UserService extends ChangeNotifier {
 
   /// 🎯 Realiza o Login
   Future<User?> login(String phone, String password) async {
-    // 1. Tenta encontrar o usuário pelo telefone na BOX de usuários registrados
-    // Usamos firstWhere para simular a busca no banco
-    final user = _registeredUsersBox.values.firstWhere(
-      (u) => u.phone == phone,
-      orElse: () => initialGuestUser.copyWith(id: 'not_found'),
-    );
+    // 1. Tenta encontrar o usuário pelo telefone (que é a chave que usamos)
+    final user = _registeredUsersBox.get(phone);
 
     // 2. Verifica se encontrou e se a senha corresponde
-    if (user.id != 'not_found' && user.password == password) {
+    if (user != null && user.password == password) {
       // Loga o usuário
       await updateUser(user);
       return user;
     }
 
-    return null; // Falha no login (senha incorreta ou usuário inexistente)
+    return null; // Falha no login
   }
 
   // -------------------------------------------------------------
@@ -119,7 +108,6 @@ class UserService extends ChangeNotifier {
   /// Atualiza o perfil logado na Box e notifica a UI
   Future<void> updateUser(User updatedUser) async {
     if (!_isInitialized) return;
-    // Salva o novo perfil (logado ou editado)
     await _userBox.put(userKey, updatedUser);
     notifyListeners();
   }
