@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert'; // ✅ Import necessário para base64Decode
+import 'dart:typed_data'; // ✅ Import necessário para Image.memory
 import '../models/food_listing.dart';
 import '../services/ads_service.dart';
-import '../services/user_service.dart'; // ✅ UserService
+import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import 'new_ad_page.dart';
 import '../utils/auth_check.dart';
@@ -153,6 +155,18 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final listing = widget.listing; // Usar uma variável local para simplificar
+
+    // ✅ 1. Tenta decodificar a imagem Base64 para exibição
+    Uint8List? imageBytes;
+    if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty) {
+      try {
+        imageBytes = base64Decode(listing.imageUrl!);
+      } catch (e) {
+        // Ignora erro de decodificação se for uma URL antiga ou inválida
+        imageBytes = null;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -178,16 +192,35 @@ class _DetailScreenState extends State<DetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Imagem ---
-            Image.network(
-              widget.listing.imageUrl ??
-                  'https://placehold.co/600x400/999999/FFFFFF?text=Sem+Foto',
+            // --- Imagem (Exibição Condicional) ---
+            Container(
               height: 250,
               width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(height: 250, color: AppTheme.imagePlaceholder);
-              },
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.imagePlaceholder,
+              ),
+              child: imageBytes != null
+                  ? Image.memory(
+                      // 🎯 CORREÇÃO: Usa Image.memory para exibir Base64
+                      imageBytes,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(
+                          Icons.error,
+                          size: 50,
+                          color: Colors.red.shade600,
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 50,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
             ),
             const SizedBox(height: 20),
 

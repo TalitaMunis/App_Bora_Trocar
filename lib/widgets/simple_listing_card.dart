@@ -1,35 +1,33 @@
 import 'package:flutter/material.dart';
-import '../models/food_listing.dart'; 
-import '../theme/app_theme.dart'; // Importa seu arquivo de tema
+import 'dart:convert'; // ✅ Necessário para base64Decode
+import 'dart:typed_data'; // ✅ Necessário para Image.memory
+import '../models/food_listing.dart';
+import '../theme/app_theme.dart';
 
 class SimpleListingCard extends StatelessWidget {
   final FoodListing listing;
-  final VoidCallback? onTap; // ✅ O callback está aqui
-  
-  // ✅ ATENÇÃO: Corrigido o construtor para aceitar 'onTap' corretamente
-  const SimpleListingCard({
-    super.key, 
-    required this.listing, 
-    this.onTap,
-  });
-  
+  final VoidCallback? onTap;
+
+  const SimpleListingCard({super.key, required this.listing, this.onTap});
 
   Widget _buildStatusChip(String status) {
+    // ... (lógica do chip omitida)
     Color chipColor;
     Color textColor;
-    
+
     // Lógica de cores usando o AppTheme
     if (status.contains('hoje')) {
       chipColor = AppTheme.alertCriticalBackground;
       textColor = AppTheme.alertCritical;
-    } else if (status.contains('amanhã')) {
+    } else if (status.contains('amanha')) {
       chipColor = AppTheme.alertWarningBackground;
       textColor = AppTheme.alertWarning;
-    } else { // Proximidade (Ex: 500m de você)
+    } else {
+      // Proximidade (Ex: 500m de você)
       chipColor = AppTheme.proximityBackground;
       textColor = AppTheme.proximityText;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -49,57 +47,86 @@ class SimpleListingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 🎯 LÓGICA DE EXIBIÇÃO DA IMAGEM
+    Uint8List? imageBytes;
+    if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty) {
+      try {
+        // Tenta decodificar a string Base64
+        imageBytes = base64Decode(listing.imageUrl!);
+      } catch (e) {
+        imageBytes = null;
+      }
+    }
+
     return Column(
       children: [
-        // 🎯 INKWELL ADICIONADO AQUI para capturar o toque em toda a área
         InkWell(
-          onTap: onTap, // Usa o callback passado pela HomePage/AdsPage
+          onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Placeholder Fixo
+                // --- CONTAINER DA IMAGEM/PLACEHOLDER ---
                 Container(
                   width: 60,
                   height: 60,
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: AppTheme.imagePlaceholder, 
+                    color: AppTheme.imagePlaceholder,
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.image_not_supported_outlined, 
-                      color: Colors.grey,
-                      size: 30, 
-                    ),
-                  ),
+                  child: imageBytes != null
+                      ? Image.memory(
+                          // ✅ CORREÇÃO: Usa Image.memory para exibir o Base64
+                          imageBytes,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 30,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                        )
+                      : const Center(
+                          // Placeholder padrão
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: Colors.grey,
+                            size: 30,
+                          ),
+                        ),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
+                // --- INFORMAÇÕES ---
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        listing.title, 
+                        listing.title,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      
+
                       // Chip de Status
                       _buildStatusChip(listing.statusProximidadeVencimento),
                     ],
                   ),
                 ),
 
-                // Ícone para Detalhes (Continua apenas como visual)
+                // Ícone para Detalhes
                 const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
               ],
             ),
