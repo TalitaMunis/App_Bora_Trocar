@@ -42,16 +42,45 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return _selectedIndex == 0 || _selectedIndex == 1;
   }
 
+  // ✅ NOVO MÉTODO: Ação de voltar (muda para a Home)
+  void _onBackTapped() {
+    // Se não estiver na Home (índice 0), navega para a Home
+    if (_selectedIndex != 0) {
+      _onItemTapped(0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Verifica se a tela atual é a Home
+    final bool isHomeScreen = _selectedIndex == 0;
+
     return Scaffold(
-      // --- 1. AppBar ---
+      // --- 1. AppBar (Ajustada para ter seta e não implicar volta) ---
       appBar: AppBar(
         title: const Text('Bora Trocar!'),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor:
+            AppTheme.primaryColor, // Corrigi para usar a cor primária
+        foregroundColor: Colors.white,
         elevation: 0,
+
+        // 🎯 LÓGICA DO BOTÃO DE VOLTAR MANUAL
+        leading: IconButton(
+          icon: Icon(
+            isHomeScreen
+                ? Icons.home
+                : Icons
+                      .arrow_back, // Se for Home, pode ser um ícone de menu (opcional)
+            color: Colors.white,
+          ),
+          onPressed: isHomeScreen
+              ? null
+              : _onBackTapped, // Se for Home, desativa (ou abre menu)
+        ),
+
+        // Remove a seta automática, já que estamos implementando a nossa
+        automaticallyImplyLeading: false,
       ),
 
       // --- 2. Body ---
