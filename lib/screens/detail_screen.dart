@@ -242,6 +242,26 @@ class _DetailScreenState extends State<DetailScreen> {
             ),
             const SizedBox(height: 20),
 
+            // ✅ NOVO: LOCALIZAÇÃO DO ANÚNCIO
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 20,
+                  color: Colors.black54,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Local: ${widget.listing.location}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
             // --- Categoria ---
             Row(
               children: [

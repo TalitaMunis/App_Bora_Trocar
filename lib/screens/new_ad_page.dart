@@ -205,6 +205,7 @@ class _NewAdPageState extends State<NewAdPage> {
       // ✅ CORREÇÃO CRÍTICA: Salva o TELEFONE como ID do criador
       creatorUserId: creatorIdKey,
       statusProximidadeVencimento: computeStatusProximidade(_expiryDate),
+      location: '',
     );
 
     // 2. Lógica de decisão: Edição ou Criação

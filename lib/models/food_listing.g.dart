@@ -27,6 +27,7 @@ class FoodListingAdapter extends TypeAdapter<FoodListing> {
       quantity: fields[7] as String,
       category: fields[8] as String?,
       creatorUserId: fields[9] as String,
+      location: fields[11] as String,
       isMockUserOwner: fields[10] as bool,
     );
   }
@@ -34,7 +35,7 @@ class FoodListingAdapter extends TypeAdapter<FoodListing> {
   @override
   void write(BinaryWriter writer, FoodListing obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -55,6 +56,8 @@ class FoodListingAdapter extends TypeAdapter<FoodListing> {
       ..write(obj.category)
       ..writeByte(9)
       ..write(obj.creatorUserId)
+      ..writeByte(11)
+      ..write(obj.location)
       ..writeByte(10)
       ..write(obj.isMockUserOwner);
   }

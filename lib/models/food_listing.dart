@@ -34,6 +34,9 @@ class FoodListing {
   @HiveField(9)
   final String creatorUserId; // ✅ NOVO CAMPO: ID do criador
 
+  @HiveField(11)
+  final String location;
+
   @HiveField(10)
   final bool isMockUserOwner;
 
@@ -48,6 +51,7 @@ class FoodListing {
     required this.quantity,
     this.category, // ✅ Adicionado ao construtor
     required this.creatorUserId, // ✅ Requerido no construtor
+    required this.location,
     this.isMockUserOwner = false,
   });
 
@@ -63,6 +67,7 @@ class FoodListing {
     String? category, // ✅ Adicionado ao copyWith
     String? creatorUserId,
     bool? isMockUserOwner,
+    String? location,
   }) {
     return FoodListing(
       id: id ?? this.id,
@@ -77,6 +82,7 @@ class FoodListing {
       category: category ?? this.category, // ✅ Usado no copyWith
       creatorUserId: creatorUserId ?? this.creatorUserId,
       isMockUserOwner: isMockUserOwner ?? this.isMockUserOwner,
+      location: location ?? this.location,
     );
   }
 }
@@ -104,6 +110,7 @@ final List<FoodListing> mockListings = [
     category: 'Pães e Massas', // ✅ Novo Campo
     creatorUserId: 'mock_user_1',
     isMockUserOwner: true,
+    location: 'São Paulo, SP',
   ),
   FoodListing(
     id: 2,
@@ -117,6 +124,7 @@ final List<FoodListing> mockListings = [
     category: 'Laticínios', // ✅ Novo Campo
     creatorUserId: 'mock_user_2',
     isMockUserOwner: false,
+    location: 'Rio de Janeiro, RJ',
   ),
   FoodListing(
     id: 3,
@@ -130,6 +138,7 @@ final List<FoodListing> mockListings = [
     category: 'Carnes e Proteínas', // ✅ Novo Campo
     creatorUserId: 'mock_user_3',
     isMockUserOwner: true,
+    location: 'Belo Horizonte, MG',
   ),
   FoodListing(
     id: 4,
@@ -143,5 +152,6 @@ final List<FoodListing> mockListings = [
     category: 'Frutas e Vegetais', // ✅ Novo Campo
     creatorUserId: 'mock_user_4',
     isMockUserOwner: false,
+    location: 'Salvador, BA',
   ),
 ];
