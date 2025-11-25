@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../theme/app_theme.dart';
@@ -7,6 +6,8 @@ import '../services/ads_service.dart';
 import '../models/food_listing.dart';
 import '../services/image_service.dart';
 import '../services/user_service.dart';
+import 'package:intl/intl.dart'; // Mantido no arquivo
+import 'dart:convert'; // Necessário para Base64
 
 class NewAdPage extends StatefulWidget {
   final FoodListing? listingToEdit;
@@ -37,12 +38,15 @@ class _NewAdPageState extends State<NewAdPage> {
   String _quantityNumber = '';
   String _quantityUnit = 'unidades';
 
+  // Localização atual (inicial ou do listing em edição)
+  String _currentLocation = 'Localização Padrão (GPS)';
+
   // Mocks de Localização e Contato
   final String _contactInfoMock = '5511999999999';
 
   // ESTADO DA IMAGEM
   String? _selectedImageUrl;
-  final bool _isUploading = false;
+  bool _isUploading = false; // Removido 'final'
 
   // Opções de categorias mockadas
   final List<String> _categories = const [
@@ -82,19 +86,14 @@ class _NewAdPageState extends State<NewAdPage> {
       _expiryDate = listing.expiryDate;
       _selectedImageUrl = listing.imageUrl;
       _category = listing.category;
-      // NOTA: Usa a localização persistida
-      // A lógica para o campo de localização precisa ser ajustada, pois ele
-      // não existia no FoodListing original. Vamos usar o valor do Controller.
+      _currentLocation = listing.location;
     }
 
     // Inicializa controllers
     _titleController = TextEditingController(text: _title);
     _descriptionController = TextEditingController(text: _description);
     _quantityNumberController = TextEditingController(text: _quantityNumber);
-    // ✅ CORRIGIDO: Usa a localização mockada se não for edição.
-    _locationController = TextEditingController(
-      text: isEditing ? listing!.location : 'Localização Padrão (GPS)',
-    );
+    _locationController = TextEditingController(text: _currentLocation);
   }
 
   @override
@@ -111,11 +110,14 @@ class _NewAdPageState extends State<NewAdPage> {
   // -------------------------------------------------------------------------
 
   Future<void> _pickImage() async {
-    // ❌ CORREÇÃO: Removido setState para _isUploading pois é final
+    setState(() {
+      _isUploading = true;
+    });
     try {
       final newUrl = await _imageService.pickAndEncodeImage();
       setState(() {
         _selectedImageUrl = newUrl;
+        _isUploading = false;
       });
     } catch (e) {
       if (mounted) {
@@ -123,6 +125,9 @@ class _NewAdPageState extends State<NewAdPage> {
           SnackBar(content: Text('Erro ao selecionar imagem: $e')),
         );
       }
+      setState(() {
+        _isUploading = false;
+      });
     }
   }
 
@@ -135,7 +140,7 @@ class _NewAdPageState extends State<NewAdPage> {
     });
   }
 
-  // --- Lógica de Formulário ---
+  // --- Lógica de Data (Função de Ação) ---
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -191,6 +196,7 @@ class _NewAdPageState extends State<NewAdPage> {
 
     final creatorIdKey = userService.currentUser.phone;
 
+    // Garante que a URL da imagem seja salva como string de placeholder se for nula
     final String finalImageUrl =
         _selectedImageUrl ??
         'https://placehold.co/60x60/CCCCCC/FFFFFF?text=FOTO';
@@ -213,7 +219,7 @@ class _NewAdPageState extends State<NewAdPage> {
           ? widget.listingToEdit!.creatorUserId
           : creatorIdKey, // Salva o ID do criador
       statusProximidadeVencimento: computeStatusProximidade(_expiryDate),
-      location: _locationController.text, // ✅ Salva a localização
+      location: _locationController.text, // Salva a localização
     );
 
     // 2. Lógica de decisão: Edição ou Criação
@@ -237,6 +243,109 @@ class _NewAdPageState extends State<NewAdPage> {
     );
 
     Navigator.pop(context);
+  }
+
+  // -------------------------------------------------------------------------
+  // ✅ Widget auxiliar para o campo de seleção de data (RESOLVE PROBLEMA DE ESCOPO)
+  // -------------------------------------------------------------------------
+  Widget _buildDatePickerField(BuildContext context) {
+    return InkWell(
+      onTap: () => _selectDate(context),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Data de Validade*',
+          suffixIcon: Icon(Icons.calendar_today),
+        ),
+        baseStyle: const TextStyle(fontSize: 16),
+        child: Text(
+          DateFormat('dd/MM/yyyy').format(_expiryDate),
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // ✅ Widget Builder para o upload de imagem (RESOLVE PROBLEMA DE ESCOPO)
+  // -------------------------------------------------------------------------
+  Widget _buildImagePicker() {
+    // Usamos Base64 decode para exibir a imagem real (se houver)
+    final imageBytes = _selectedImageUrl != null
+        ? base64Decode(_selectedImageUrl!)
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: _isUploading ? null : _pickImage,
+          borderRadius: BorderRadius.circular(8),
+
+          child: Container(
+            height: 150,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.dividerColor),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _isUploading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryColor,
+                    ),
+                  )
+                : imageBytes != null
+                ? Image.memory(
+                    // 🎯 USA Image.memory para exibir a imagem real
+                    imageBytes,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 50,
+                        color: Colors.red.shade600,
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_photo_alternate_outlined,
+                          size: 40,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Clique para Adicionar Imagem',
+                          style: TextStyle(color: Colors.grey.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            const Spacer(),
+            if (_selectedImageUrl != null)
+              TextButton.icon(
+                onPressed: _isUploading ? null : _removeImage,
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                label: const Text(
+                  'Remover Imagem',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 
   @override
@@ -263,7 +372,7 @@ class _NewAdPageState extends State<NewAdPage> {
               ),
               const SizedBox(height: 10),
 
-              _buildImagePicker(),
+              _buildImagePicker(), // ✅ Chamada agora resolve o erro de escopo
 
               const SizedBox(height: 16),
               // Localização Editável
@@ -284,10 +393,11 @@ class _NewAdPageState extends State<NewAdPage> {
                     },
                   ),
                 ),
-                validator: (value) =>
-                    value!.isEmpty ? 'A localização é obrigatória.' : null,
+                validator: (value) => (value == null || value.isEmpty)
+                    ? 'A localização é obrigatória.'
+                    : null,
                 onSaved: (value) =>
-                    _locationController.text, // Salva o valor do Controller
+                    _currentLocation = value ?? _locationController.text,
               ),
               const Divider(height: 30),
 
@@ -305,9 +415,10 @@ class _NewAdPageState extends State<NewAdPage> {
                   labelText: 'Título do Alimento*',
                 ),
                 maxLength: 50,
-                onSaved: (value) => _title = value!,
-                validator: (value) =>
-                    value!.isEmpty ? 'O título é obrigatório.' : null,
+                onSaved: (value) => _title = value ?? '',
+                validator: (value) => (value == null || value.isEmpty)
+                    ? 'O título é obrigatório.'
+                    : null,
               ),
               const SizedBox(height: 16),
 
@@ -352,7 +463,9 @@ class _NewAdPageState extends State<NewAdPage> {
               const SizedBox(height: 10),
 
               // Data de Validade (OBRIGATÓRIO)
-              _buildDatePickerField(context),
+              _buildDatePickerField(
+                context,
+              ), // ✅ Chamada agora resolve o erro de escopo
               const SizedBox(height: 16),
 
               // Quantidade com Dropdown de Unidades
@@ -370,8 +483,7 @@ class _NewAdPageState extends State<NewAdPage> {
                       keyboardType: TextInputType.number,
                       onSaved: (value) => _quantityNumber = value!,
                       validator: (value) {
-                        if (value == null || value.isEmpty)
-                          return 'O valor é obrigatório.';
+                        if (value!.isEmpty) return 'O valor é obrigatório.';
                         if (double.tryParse(value) == null) {
                           return 'Apenas números são válidos.';
                         }
@@ -429,100 +541,6 @@ class _NewAdPageState extends State<NewAdPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // --- WIDGETS AUXILIARES ---
-
-  Widget _buildImagePicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        InkWell(
-          onTap: _isUploading ? null : _pickImage,
-          borderRadius: BorderRadius.circular(8),
-
-          child: Container(
-            height: 150,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.dividerColor),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: _isUploading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryColor,
-                    ),
-                  )
-                : _selectedImageUrl != null
-                ? Image.network(
-                    _selectedImageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 50,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  )
-                : Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.add_photo_alternate_outlined,
-                          size: 40,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Clique para Adicionar Imagem',
-                          style: TextStyle(color: Colors.grey.shade700),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            const Spacer(),
-            if (_selectedImageUrl != null)
-              TextButton.icon(
-                onPressed: _isUploading ? null : _removeImage,
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                label: const Text(
-                  'Remover Imagem',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // Widget auxiliar para o campo de seleção de data (RF01)
-  Widget _buildDatePickerField(BuildContext context) {
-    return InkWell(
-      onTap: () => _selectDate(context),
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Data de Validade*',
-          suffixIcon: Icon(Icons.calendar_today),
-        ),
-        baseStyle: const TextStyle(fontSize: 16),
-        child: Text(
-          DateFormat('dd/MM/yyyy').format(_expiryDate),
-          style: const TextStyle(fontWeight: FontWeight.w500),
         ),
       ),
     );

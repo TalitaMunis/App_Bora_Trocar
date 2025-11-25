@@ -1,37 +1,40 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 
-import 'package:flutter/foundation.dart';
-import 'package:image_picker/image_picker.dart'; // ✅ Pacote para selecionar imagem
-
-/// Serviço que lida com a seleção de imagens e conversão para Base64.
-/// NOTA: O método pickAndEncode simula o processo de upload real para o ambiente local.
+/// Serviço que lida com a seleção de imagens e conversão.
 class ImageService {
   final ImagePicker _picker = ImagePicker();
 
-  /// Abre o seletor de imagens, lê o arquivo e o converte para string Base64.
-  /// Retorna a string Base64 (que é salva no Hive).
+  // Lista de Mocks para simulação visual (usaremos apenas para fallback)
+  final List<String> placeholderUrls = [
+    'https://placehold.co/60x60/8B4513/FFFFFF?text=P%C3%A3o',
+    'https://placehold.co/60x60/FFD700/000000?text=Fruta',
+  ];
+
+  /// Simula a abertura do seletor e retorna o arquivo XFile para manipulação.
+  Future<XFile?> pickImageFile() async {
+    return _picker.pickImage(source: ImageSource.gallery);
+  }
+
+  /// Converte o XFile para uma string Base64.
+  Future<String?> encodeFileToBase64(XFile file) async {
+    final Uint8List bytes = await file.readAsBytes();
+    return base64Encode(bytes);
+  }
+
+  // ✅ NOVO MÉTODO: Combina pickImageFile e encodeFileToBase64
+  /// Abre o seletor, pega o arquivo e retorna a string Base64 final.
   Future<String?> pickAndEncodeImage() async {
-    // Permite ao usuário escolher uma imagem da galeria
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-    );
-
-    if (pickedFile != null) {
-      // Lê o conteúdo do arquivo como bytes
-      final Uint8List bytes = await pickedFile.readAsBytes();
-
-      // Converte os bytes para uma string Base64
-      final String base64Image = base64Encode(bytes);
-
-      return base64Image;
+    final file = await pickImageFile();
+    if (file != null) {
+      return encodeFileToBase64(file);
     }
     return null;
   }
 
-  /// Simula a remoção da imagem (operação de housekeeping).
+  /// Simula a remoção da imagem.
   Future<void> removeImage(String base64String) async {
-    // Em um cenário real, notificaríamos o servidor para deletar.
     await Future.delayed(const Duration(milliseconds: 100));
   }
 }
