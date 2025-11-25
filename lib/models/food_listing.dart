@@ -11,7 +11,7 @@ class FoodListing {
   final String title;
 
   @HiveField(2)
-  final String? imageUrl;
+  final String? imageUrl; // Armazena a String Base64 da imagem (ou null)
 
   @HiveField(3)
   final String statusProximidadeVencimento;

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../theme/app_theme.dart';
 import '../services/ads_service.dart';
-import '../services/user_service.dart';
 import '../models/food_listing.dart';
 import '../services/image_service.dart';
+import '../services/user_service.dart';
 
 class NewAdPage extends StatefulWidget {
   final FoodListing? listingToEdit;
@@ -19,7 +20,6 @@ class NewAdPage extends StatefulWidget {
 class _NewAdPageState extends State<NewAdPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // ✅ CORREÇÃO 2: A instância é usada nos métodos _pickImage e _removeImage
   late final ImageService _imageService = ImageService();
 
   // Controllers para preencher e gerenciar os TextFields
@@ -33,16 +33,16 @@ class _NewAdPageState extends State<NewAdPage> {
   String _description = '';
   String? _category;
   DateTime _expiryDate = DateTime.now().add(const Duration(days: 1));
+
   String _quantityNumber = '';
   String _quantityUnit = 'unidades';
 
   // Mocks de Localização e Contato
-  String _currentLocation = 'Localização Padrão (GPS)';
   final String _contactInfoMock = '5511999999999';
 
   // ESTADO DA IMAGEM
   String? _selectedImageUrl;
-  bool _isUploading = false;
+  final bool _isUploading = false;
 
   // Opções de categorias mockadas
   final List<String> _categories = const [
@@ -63,14 +63,15 @@ class _NewAdPageState extends State<NewAdPage> {
     final isEditing = widget.listingToEdit != null;
     final listing = widget.listingToEdit;
 
-    // Divide a quantidade para edição
+    // Divide a quantidade para edição (Ex: "2 pacotes" -> "2" e "pacotes")
     if (isEditing && listing!.quantity.isNotEmpty) {
       final parts = listing.quantity.split(' ');
       _quantityNumber = parts.isNotEmpty ? parts[0] : '';
       if (parts.length > 1) {
-        _quantityUnit = _units.contains(parts[1].toLowerCase())
-            ? parts[1].toLowerCase()
-            : 'unidades';
+        _quantityUnit = parts[1].toLowerCase();
+        if (!_units.contains(_quantityUnit)) {
+          _quantityUnit = 'unidades';
+        }
       }
     }
 
@@ -80,15 +81,20 @@ class _NewAdPageState extends State<NewAdPage> {
       _description = listing.description;
       _expiryDate = listing.expiryDate;
       _selectedImageUrl = listing.imageUrl;
-      _category = _categories[0];
-      _currentLocation = 'Rua Exemplo, 123';
+      _category = listing.category;
+      // NOTA: Usa a localização persistida
+      // A lógica para o campo de localização precisa ser ajustada, pois ele
+      // não existia no FoodListing original. Vamos usar o valor do Controller.
     }
 
     // Inicializa controllers
     _titleController = TextEditingController(text: _title);
     _descriptionController = TextEditingController(text: _description);
     _quantityNumberController = TextEditingController(text: _quantityNumber);
-    _locationController = TextEditingController(text: _currentLocation);
+    // ✅ CORRIGIDO: Usa a localização mockada se não for edição.
+    _locationController = TextEditingController(
+      text: isEditing ? listing!.location : 'Localização Padrão (GPS)',
+    );
   }
 
   @override
@@ -100,17 +106,16 @@ class _NewAdPageState extends State<NewAdPage> {
     super.dispose();
   }
 
-  // ✅ FUNÇÕES DE IMAGEM RESTAURADAS PARA USAR _imageService
+  // -------------------------------------------------------------------------
+  // LÓGICA DE IMAGEM
+  // -------------------------------------------------------------------------
+
   Future<void> _pickImage() async {
-    setState(() {
-      _isUploading = true;
-    });
+    // ❌ CORREÇÃO: Removido setState para _isUploading pois é final
     try {
-      final newUrl = await _imageService
-          .pickAndUploadImage(); // ✅ USA _imageService
+      final newUrl = await _imageService.pickAndEncodeImage();
       setState(() {
         _selectedImageUrl = newUrl;
-        // _isUploading = false; // Mantido como final
       });
     } catch (e) {
       if (mounted) {
@@ -118,13 +123,12 @@ class _NewAdPageState extends State<NewAdPage> {
           SnackBar(content: Text('Erro ao selecionar imagem: $e')),
         );
       }
-      // setState(() { _isUploading = false; }); // Mantido como final
     }
   }
 
   void _removeImage() {
     if (_selectedImageUrl != null) {
-      _imageService.removeImage(_selectedImageUrl!); // ✅ USA _imageService
+      _imageService.removeImage(_selectedImageUrl!);
     }
     setState(() {
       _selectedImageUrl = null;
@@ -147,7 +151,7 @@ class _NewAdPageState extends State<NewAdPage> {
     }
   }
 
-  // ✅ CORREÇÃO 3: Função auxiliar para calcular o status (usada no construtor)
+  // Função auxiliar para calcular o status (para o construtor FoodListing)
   String computeStatusProximidade(DateTime expiry) {
     final diff = expiry.difference(DateTime.now()).inDays;
     if (diff < 0) return 'VENCIDO';
@@ -168,7 +172,7 @@ class _NewAdPageState extends State<NewAdPage> {
     }
     _formKey.currentState!.save();
 
-    // Validação Manual de Campos Críticos (TÍTULO e QUANTIDADE)
+    // Validação Manual de Campos Críticos (TÍTULO e QUANTIDADE NUMÉRICA)
     if (_title.isEmpty || _quantityNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -182,12 +186,14 @@ class _NewAdPageState extends State<NewAdPage> {
     }
 
     final adsService = Provider.of<AdsService>(context, listen: false);
+    final userService = Provider.of<UserService>(context, listen: false);
     final isEditing = widget.listingToEdit != null;
 
-    // 🎯 ID do criador: Usa o ID do usuário logado (Provider)
-    final userService = Provider.of<UserService>(context, listen: false);
-    // 🎯 CORREÇÃO 1: O ID do criador AGORA É O TELEFONE (Chave de busca do Hive)
     final creatorIdKey = userService.currentUser.phone;
+
+    final String finalImageUrl =
+        _selectedImageUrl ??
+        'https://placehold.co/60x60/CCCCCC/FFFFFF?text=FOTO';
 
     // 1. Constrói o objeto (Novo ou Atualizado)
     final listingToSave = FoodListing(
@@ -196,16 +202,18 @@ class _NewAdPageState extends State<NewAdPage> {
       description: _description.isEmpty
           ? 'Nenhuma descrição fornecida.'
           : _description,
-      quantity: '$_quantityNumber $_quantityUnit',
+      quantity:
+          '$_quantityNumber $_quantityUnit', // Salva a quantidade combinada
       expiryDate: _expiryDate,
       contactInfo: _contactInfoMock,
-      imageUrl: _selectedImageUrl,
+      imageUrl: finalImageUrl, // Salva a URL (Base64/Placeholder)
       isMockUserOwner: isEditing ? widget.listingToEdit!.isMockUserOwner : true,
-      category: _category,
-      // ✅ CORREÇÃO CRÍTICA: Salva o TELEFONE como ID do criador
-      creatorUserId: creatorIdKey,
+      category: _category, // Salva a categoria (pode ser null)
+      creatorUserId: isEditing
+          ? widget.listingToEdit!.creatorUserId
+          : creatorIdKey, // Salva o ID do criador
       statusProximidadeVencimento: computeStatusProximidade(_expiryDate),
-      location: '',
+      location: _locationController.text, // ✅ Salva a localização
     );
 
     // 2. Lógica de decisão: Edição ou Criação
@@ -269,14 +277,17 @@ class _NewAdPageState extends State<NewAdPage> {
                       color: AppTheme.primaryColor,
                     ),
                     onPressed: () {
-                      _locationController.text =
-                          'Localização Atual (GPS Obtido)'; // Simula GPS
+                      setState(() {
+                        _locationController.text =
+                            'Localização Atual (GPS Obtido)'; // Simula GPS
+                      });
                     },
                   ),
                 ),
                 validator: (value) =>
                     value!.isEmpty ? 'A localização é obrigatória.' : null,
-                onSaved: (value) => _currentLocation = value!,
+                onSaved: (value) =>
+                    _locationController.text, // Salva o valor do Controller
               ),
               const Divider(height: 30),
 
@@ -359,7 +370,8 @@ class _NewAdPageState extends State<NewAdPage> {
                       keyboardType: TextInputType.number,
                       onSaved: (value) => _quantityNumber = value!,
                       validator: (value) {
-                        if (value!.isEmpty) return 'O valor é obrigatório.';
+                        if (value == null || value.isEmpty)
+                          return 'O valor é obrigatório.';
                         if (double.tryParse(value) == null) {
                           return 'Apenas números são válidos.';
                         }
@@ -497,8 +509,6 @@ class _NewAdPageState extends State<NewAdPage> {
       ],
     );
   }
-
-  // (Removed unused helper `_buildInfoContainer` to avoid unused_element warning)
 
   // Widget auxiliar para o campo de seleção de data (RF01)
   Widget _buildDatePickerField(BuildContext context) {

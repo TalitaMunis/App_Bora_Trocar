@@ -1,50 +1,37 @@
-import 'dart:math';
+import 'dart:convert';
+import 'dart:typed_data';
 
-/// Serviço que simula a escolha e o upload de uma imagem
-/// Retorna uma URL de placeholder para simular o Firebase Storage.
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart'; // ✅ Pacote para selecionar imagem
+
+/// Serviço que lida com a seleção de imagens e conversão para Base64.
+/// NOTA: O método pickAndEncode simula o processo de upload real para o ambiente local.
 class ImageService {
-  final List<String> placeholderTexts = [
-    'Pão',
-    'Fruta',
-    'Doce',
-    'Vegetal',
-    'Carne',
-    'Laticínio',
-    'Bebida',
-  ];
-  final List<String> placeholderColors = [
-    '50C4FF',
-    'FFD700',
-    'FF5733',
-    '4CAF50',
-    '800080',
-    'FF6347',
-    '00CED1',
-  ];
-  final Random _random = Random();
+  final ImagePicker _picker = ImagePicker();
 
-  /// Simula a abertura do seletor de arquivos e o upload.
-  /// Retorna a URL da imagem (simulada) que foi "selecionada".
-  Future<String> pickAndUploadImage() async {
-    // Simula o tempo de espera para o usuário escolher a imagem
-    await Future.delayed(const Duration(milliseconds: 700));
+  /// Abre o seletor de imagens, lê o arquivo e o converte para string Base64.
+  /// Retorna a string Base64 (que é salva no Hive).
+  Future<String?> pickAndEncodeImage() async {
+    // Permite ao usuário escolher uma imagem da galeria
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+    );
 
-    // Lógica para gerar uma URL de placeholder única e aleatória
-    final textIndex = _random.nextInt(placeholderTexts.length);
-    final colorIndex = _random.nextInt(placeholderColors.length);
+    if (pickedFile != null) {
+      // Lê o conteúdo do arquivo como bytes
+      final Uint8List bytes = await pickedFile.readAsBytes();
 
-    final text = placeholderTexts[textIndex];
-    final color = placeholderColors[colorIndex];
+      // Converte os bytes para uma string Base64
+      final String base64Image = base64Encode(bytes);
 
-    // URL de placeholder (simula a URL pública do Storage)
-    final imageUrl = 'https://placehold.co/600x400/$color/white?text=$text';
-
-    return imageUrl;
+      return base64Image;
+    }
+    return null;
   }
 
-  /// Simula a remoção da imagem no Storage.
-  Future<void> removeImage(String url) async {
-    // ❌ A instrução 'print' foi removida para eliminar o aviso de produção.
-    await Future.delayed(const Duration(milliseconds: 300));
+  /// Simula a remoção da imagem (operação de housekeeping).
+  Future<void> removeImage(String base64String) async {
+    // Em um cenário real, notificaríamos o servidor para deletar.
+    await Future.delayed(const Duration(milliseconds: 100));
   }
 }
