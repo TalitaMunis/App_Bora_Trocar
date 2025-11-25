@@ -110,14 +110,17 @@ class _NewAdPageState extends State<NewAdPage> {
   // -------------------------------------------------------------------------
 
   Future<void> _pickImage() async {
+    // Mark uploading state immediately (synchronous, safe)
+    if (!mounted) return;
     setState(() {
       _isUploading = true;
     });
+
     try {
       final newUrl = await _imageService.pickAndEncodeImage();
+      if (!mounted) return; // guard BuildContext/state after await
       setState(() {
         _selectedImageUrl = newUrl;
-        _isUploading = false;
       });
     } catch (e) {
       if (mounted) {
@@ -125,9 +128,12 @@ class _NewAdPageState extends State<NewAdPage> {
           SnackBar(content: Text('Erro ao selecionar imagem: $e')),
         );
       }
-      setState(() {
-        _isUploading = false;
-      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
     }
   }
 
@@ -150,6 +156,7 @@ class _NewAdPageState extends State<NewAdPage> {
       helpText: 'Selecione a Data de Validade',
     );
     if (picked != null && picked != _expiryDate) {
+      if (!mounted) return; // guard state/context after async gap
       setState(() {
         _expiryDate = picked;
       });

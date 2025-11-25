@@ -1,18 +1,38 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../models/user.dart';
 import '../services/user_service.dart';
 import 'edit_profile_page.dart';
-import 'login_signup_page.dart'; // Importa Login Page para o modo Convidado
+import 'login_signup_page.dart';
+import 'dart:convert'; // ✅ Necessário para base64Decode
+import 'dart:typed_data'; // ✅ Necessário para MemoryImage
 
-// --- WIDGETS AUXILIARES MOVIDOS PARA O ARQUIVO ---
+// --- WIDGETS AUXILIARES ---
+
 Widget _buildProfilePhoto(String? url) {
-  // Lógica para exibir a foto de perfil ou o placeholder
+  ImageProvider? imageProvider;
+
+  // 🎯 LÓGICA DE EXIBIÇÃO: Decodifica o Base64
+  if (url != null && url.isNotEmpty && url != 'null') {
+    // Checa se a URL não é nula/vazia/string 'null'
+    try {
+      final imageBytes = base64Decode(url);
+      imageProvider = MemoryImage(
+        imageBytes,
+      ); // Usa MemoryImage para exibir bytes
+    } catch (e) {
+      imageProvider = null; // Falha na decodificação
+    }
+  }
+
   return CircleAvatar(
     radius: 60,
     backgroundColor: AppTheme.imagePlaceholder,
-    backgroundImage: url != null ? NetworkImage(url) : null,
-    child: url == null
+    backgroundImage: imageProvider, // Usa a foto decodificada
+    child: imageProvider == null
         ? Icon(Icons.person_outline, size: 60, color: Colors.grey.shade600)
         : null,
   );
@@ -65,28 +85,23 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Scaffold com a AppBar (gerenciado pelo MainNavigationScreen)
     return Scaffold(
       appBar: AppBar(
         title: const Text('Perfil'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
-      // O Consumer agora é o corpo do Scaffold
       body: Consumer<UserService>(
         builder: (context, userService, child) {
-          // 🎯 1. TRATAMENTO DE LOADING: Mostra o loading enquanto o Hive inicializa
           if (!userService.isInitialized) {
             return const Center(
               child: CircularProgressIndicator(color: AppTheme.primaryColor),
             );
           }
 
-          // 2. Se estiver inicializado (já carregou do Hive), exibe o conteúdo
           final currentUser = userService.currentUser;
           final theme = Theme.of(context);
-          final isGuest =
-              !userService.isUserLoggedIn; // Checa se é usuário convidado
+          final isGuest = !userService.isUserLoggedIn;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
@@ -94,7 +109,9 @@ class ProfilePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 // --- 1. FOTO DO PERFIL ---
-                _buildProfilePhoto(currentUser.photoUrl),
+                _buildProfilePhoto(
+                  currentUser.photoUrl,
+                ), // ✅ Chama a lógica de exibição de Base64
                 const SizedBox(height: 16),
 
                 // --- 2. NOME DO USUÁRIO ---
@@ -133,7 +150,7 @@ class ProfilePage extends StatelessWidget {
                   width: double.infinity,
                   child: isGuest
                       ? ElevatedButton.icon(
-                          // MODO CONVIDADO: Botão de Login
+                          // MODO CONVIDADO
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -143,7 +160,7 @@ class ProfilePage extends StatelessWidget {
                           },
                           icon: const Icon(Icons.person_add_alt_1),
                           label: const Text(
-                            'ENTRAR / CADASTRAR',
+                            'ENTRAR / CADASTRA',
                             style: TextStyle(fontSize: 16),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -153,7 +170,7 @@ class ProfilePage extends StatelessWidget {
                           ),
                         )
                       : ElevatedButton.icon(
-                          // MODO LOGADO: Botão de Edição
+                          // MODO LOGADO (Editar)
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -180,18 +197,21 @@ class ProfilePage extends StatelessWidget {
                 if (!isGuest)
                   TextButton(
                     onPressed: () async {
-                      // Capture messenger and service before awaiting to avoid
-                      // using `context` across an async gap.
-                      final messenger = ScaffoldMessenger.of(context);
+                      // Capture values that rely on BuildContext before the async gap
                       final userServiceAction = Provider.of<UserService>(
                         context,
                         listen: false,
                       );
+                      final messenger = ScaffoldMessenger.of(context);
 
                       await userServiceAction.logout();
+
+                      // Use the captured messenger after the await (avoids using BuildContext across async gap)
                       messenger.showSnackBar(
                         const SnackBar(content: Text('Saindo da conta...')),
                       );
+
+                      // Nota: O redirecionamento é tratado pelo AuthWrapper
                     },
                     child: Text(
                       'Sair da Conta',
