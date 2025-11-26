@@ -42,7 +42,7 @@ class UserService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ Getter: Verifica se o usuário logado não é o 'guest'
+  // Verifica se existe um usuário autenticado (não 'guest')
   bool get isUserLoggedIn {
     if (!_isInitialized) return false;
     return _userBox.get(userKey)?.id != 'guest';
@@ -56,13 +56,11 @@ class UserService extends ChangeNotifier {
   }
 
   // -------------------------------------------------------------
-  // LEITURA DE PERFIL POR ID (CORRIGIDA)
+  // LEITURA DE PERFIL POR ID
   // -------------------------------------------------------------
 
-  /// 🎯 Busca um usuário cadastrado pelo seu Telefone/Chave de Persistência.
-  /// A chave de persistência é o número de telefone (User.phone).
+  /// Busca um usuário cadastrado pelo telefone (chave de persistência).
   User? getUserById(String phoneKey) {
-    // ✅ CORREÇÃO: Busca o usuário diretamente na Box de Registrados usando a chave
     return _registeredUsersBox.get(phoneKey);
   }
 
@@ -70,23 +68,23 @@ class UserService extends ChangeNotifier {
   // AUTENTICAÇÃO (MÉTODOS CUIDADOSAMENTE AJUSTADOS)
   // -------------------------------------------------------------
 
-  /// 🎯 Realiza o Cadastro de um novo usuário
+  /// Realiza cadastro de usuário
   Future<bool> signup(User newUser) async {
     // 1. Verifica se o telefone já existe
     if (_registeredUsersBox.values.any((user) => user.phone == newUser.phone)) {
       return false; // Usuário já existe
     }
 
-    // 2. Salva o novo usuário na Box usando o TELEFONE como chave de persistência
+    // 2. Salva o usuário na Box usando o TELEFONE como chave de persistência
     await _registeredUsersBox.put(newUser.phone, newUser);
 
-    // 3. Loga o novo usuário imediatamente
+    // 3. Loga o usuário imediatamente
     await updateUser(newUser);
 
     return true;
   }
 
-  /// 🎯 Realiza o Login
+  /// Realiza login
   Future<User?> login(String phone, String password) async {
     // 1. Tenta encontrar o usuário pelo telefone (que é a chave que usamos)
     final user = _registeredUsersBox.get(phone);

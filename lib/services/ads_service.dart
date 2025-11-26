@@ -86,7 +86,7 @@ class AdsService extends ChangeNotifier {
     }
   }
 
-  // 🎯 FUNÇÃO AUXILIAR: Remove acentos e caracteres especiais
+  // Função auxiliar: remove acentos e caracteres especiais
   String _normalize(String? text) {
     final t = (text ?? '').toLowerCase();
     return t
@@ -106,11 +106,6 @@ class AdsService extends ChangeNotifier {
     // 2. Aplica o filtro de CATEGORIA
     if (_selectedCategories.isNotEmpty) {
       results = results.where((listing) {
-        // Supondo que a categoria do FoodListing está no campo 'description' ou similar para este mock
-        // Em uma estrutura real, FoodListing teria um campo 'category'
-
-        // NOTE: Esta lógica precisa ser aprimorada quando FoodListing tiver campo 'category'
-        // Por enquanto, apenas verifica se a descrição contém uma das categorias para fins de demonstração
         return _selectedCategories.any(
           (cat) => _normalize(listing.category).contains(_normalize(cat)),
         );
@@ -127,7 +122,7 @@ class AdsService extends ChangeNotifier {
       }).toList();
     }
 
-    // 4. 🎯 APLICA A ORDENAÇÃO
+    // 4. Aplica a ordenação
     if (_currentSortBy == 'expiry') {
       // Ordena pela Data de Vencimento
       results.sort((a, b) {
@@ -156,7 +151,7 @@ class AdsService extends ChangeNotifier {
 
   // ------------------ CRUD ------------------
 
-  /// Adiciona um novo anúncio (Criação)
+  /// Cria um anúncio (persistência)
   Future<void> addListing(FoodListing newListing) async {
     // 1. Gera o próximo ID com base nas chaves do Hive
     final newId = _adsBox.isEmpty

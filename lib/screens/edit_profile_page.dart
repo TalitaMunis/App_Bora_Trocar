@@ -20,7 +20,7 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
-  // ✅ NOVO: Regex para telefone (Resolvendo Undefined name '_phoneRegex')
+  // Regex para validar números de telefone simples
   final RegExp _phoneRegex = RegExp(r'^[0-9\-\s\(\)\+]+$');
 
   late final ImageService _imageService = ImageService();
@@ -37,7 +37,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    final user = widget.userToEdit; // ✅ VARIÁVEL CORRIGIDA
+    final user = widget.userToEdit;
 
     _nameController = TextEditingController(text: user.name);
     _phoneController = TextEditingController(text: user.phone);
@@ -53,7 +53,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
-  // 🎯 LÓGICA DE UPLOAD DE FOTO
+  // LÓGICA DE UPLOAD DE FOTO
   Future<void> _pickProfilePhoto() async {
     setState(() {
       _isUploadingPhoto = true;
@@ -63,7 +63,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final String? base64String = await _imageService.pickAndEncodeImage();
 
       if (!mounted) {
-        return; // ✅ SEGURANÇA: Checa o contexto antes de usar setState
+        return; // checa se o State ainda está montado antes de usar setState
       }
       setState(() {
         _photoUrl = base64String;
@@ -72,7 +72,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        // ✅ SEGURANÇA: Corrigindo 'BuildContext's across async gaps
         SnackBar(
           content: Text(
             base64String != null ? 'Foto selecionada!' : 'Seleção cancelada.',
@@ -91,7 +90,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  // 🎯 MÉTODO: Remover Foto
+  // Método: remover foto do perfil
   void _removeProfilePhoto() {
     setState(() {
       _photoUrl = null;
@@ -123,7 +122,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  // ✅ Widget auxiliar para foto com botão de edição (AGORA COM IMAGE.MEMORY)
+  // Widget auxiliar: editor de foto com botão de edição
   Widget _buildPhotoEditor() {
     // Lógica para decodificar a foto Base64
     final imageBytes = _photoUrl != null ? base64Decode(_photoUrl!) : null;
@@ -134,7 +133,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         CircleAvatar(
           radius: 60,
           backgroundColor: AppTheme.imagePlaceholder,
-          // ✅ Usa ImageProvider (MemoryImage) se houver bytes
+          // Usa MemoryImage se houver bytes para exibição
           backgroundImage: imageBytes != null ? MemoryImage(imageBytes) : null,
           child: _isUploadingPhoto
               ? const CircularProgressIndicator(color: AppTheme.primaryColor)
@@ -148,9 +147,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         // Botão flutuante para editar a foto
         FloatingActionButton.small(
-          onPressed: _isUploadingPhoto
-              ? null
-              : _pickProfilePhoto, // ✅ Chama a função de upload
+          onPressed: _isUploadingPhoto ? null : _pickProfilePhoto,
           backgroundColor: AppTheme.primaryColor,
           child: Icon(
             _photoUrl != null ? Icons.edit : Icons.camera_alt,
@@ -163,7 +160,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             bottom: 50,
             left: 70,
             child: GestureDetector(
-              onTap: _removeProfilePhoto, // ✅ LIGADO CORRETAMENTE
+              onTap: _removeProfilePhoto,
               child: CircleAvatar(
                 radius: 12,
                 backgroundColor: Colors.red.shade700,
@@ -212,7 +209,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 keyboardType: TextInputType.phone,
                 validator: (value) {
                   if (value!.isEmpty) return 'O telefone é obrigatório.';
-                  // ✅ Validação usando o _phoneRegex
+                  // Validação usando o _phoneRegex
                   if (!_phoneRegex.hasMatch(value)) {
                     return 'Use apenas números, parênteses ou hífens.';
                   }

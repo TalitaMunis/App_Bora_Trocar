@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_screen.dart';
-// import 'main_navigation_screen.dart'; ❌ REMOVIDO
-import 'auth_wrapper.dart'; // ✅ NOVO DESTINO
+import 'auth_wrapper.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,8 +25,6 @@ class _SplashScreenState extends State<SplashScreen> {
     // a SplashScreen só precisa checar a Onboarding (SharePrefs).
 
     final prefs = await SharedPreferences.getInstance();
-    // 💡 Para fins de persistência local, o shared_preferences precisa estar na Box do Hive!
-    // Vamos manter por enquanto, mas isso é algo a migrar para o Hive futuramente.
     bool hasSeenOnboarding = prefs.getBool('onboarding_complete') ?? false;
 
     // 1. Define o destino

@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+part 'user.g.dart';
 
-part 'user.g.dart'; // ✅ Linha OBRIGATÓRIA
-
-// ✅ HiveType: ID único (1)
+// HiveType e HiveField para integração com Hive
 @HiveType(typeId: 1)
 class User {
   // Campos obrigatórios do perfil (RF)
@@ -22,7 +21,7 @@ class User {
   @HiveField(5)
   final String? photoUrl;
   @HiveField(6)
-  final String password; // ✅ NOVO: Senha para login
+  final String password;
 
   User({
     required this.id,
@@ -40,7 +39,7 @@ class User {
     String? name,
     String? phone,
     String? city,
-    String? password, // ✅ NOVO
+    String? password, // campo de senha (opcional no copyWith)
     ValueGetter<String?>? email,
     ValueGetter<String?>? photoUrl,
   }) {
@@ -49,7 +48,7 @@ class User {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       city: city ?? this.city,
-      password: password ?? this.password, // ✅ NOVO
+      password: password ?? this.password,
       email: email != null ? email() : this.email,
       photoUrl: photoUrl != null ? photoUrl() : this.photoUrl,
     );

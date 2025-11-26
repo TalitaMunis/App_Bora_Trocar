@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../services/user_service.dart';
-import 'login_signup_page.dart'; // Tela de Login/Cadastro
-import 'main_navigation_screen.dart'; // Tela Home (App Logado)
+import 'login_signup_page.dart';
+import 'main_navigation_screen.dart';
 
 /// Widget que decide se exibe a tela de login ou a tela principal.
 ///

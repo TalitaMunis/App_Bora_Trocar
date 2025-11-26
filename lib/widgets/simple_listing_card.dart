@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:convert'; // ✅ Necessário para base64Decode
-import 'dart:typed_data'; // ✅ Necessário para Image.memory
+import 'dart:convert'; // necessário para base64Decode
+import 'dart:typed_data'; // necessário para Image.memory
 import '../models/food_listing.dart';
 import '../theme/app_theme.dart';
 
@@ -47,7 +47,7 @@ class SimpleListingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🎯 LÓGICA DE EXIBIÇÃO DA IMAGEM
+    // Lógica de exibição da imagem (decodifica Base64 se presente)
     Uint8List? imageBytes;
     if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty) {
       try {
@@ -81,7 +81,7 @@ class SimpleListingCard extends StatelessWidget {
                   ),
                   child: imageBytes != null
                       ? Image.memory(
-                          // ✅ CORREÇÃO: Usa Image.memory para exibir o Base64
+                          // Exibe bytes de imagem decodificados com Image.memory
                           imageBytes,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>

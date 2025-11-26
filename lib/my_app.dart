@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ MultiProvider injeta os dois serviços necessários
+    // Injeta serviços via MultiProvider
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AdsService()),

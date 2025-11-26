@@ -23,8 +23,8 @@ class ImageService {
     return base64Encode(bytes);
   }
 
-  // ✅ NOVO MÉTODO: Combina pickImageFile e encodeFileToBase64
-  /// Abre o seletor, pega o arquivo e retorna a string Base64 final.
+  // Método que combina seleção e codificação para Base64
+  /// Abre o seletor, obtém o arquivo e retorna a string Base64.
   Future<String?> pickAndEncodeImage() async {
     final file = await pickImageFile();
     if (file != null) {

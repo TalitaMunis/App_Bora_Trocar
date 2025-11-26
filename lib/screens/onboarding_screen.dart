@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart'; // Para cores
-//import 'login_signup_page.dart'; // Próximo destino
-import 'main_navigation_screen.dart'; // Próximo destino atualizado
+import 'main_navigation_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

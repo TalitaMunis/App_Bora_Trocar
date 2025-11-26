@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:convert'; // ✅ Import necessário para base64Decode
-import 'dart:typed_data'; // ✅ Import necessário para Image.memory
+import 'dart:convert';
+import 'dart:typed_data';
 import '../models/food_listing.dart';
 import '../services/ads_service.dart';
 import '../services/user_service.dart';
@@ -36,12 +36,12 @@ class _DetailScreenState extends State<DetailScreen> {
     _loadAdvertiserName();
   }
 
-  // 🎯 LÓGICA DE BUSCA DO NOME DO ANUNCIANTE
+  // Busca o nome do anunciante pelo creatorUserId
   Future<void> _loadAdvertiserName() async {
-    // 1. ✅ CHAVE CORRIGIDA: Usa o creatorUserId do anúncio
+    // Usa o creatorUserId do anúncio
     final creatorId = widget.listing.creatorUserId;
 
-    // 2. Busca o perfil do UserService (listen: false)
+    // 2. Busca o perfil do UserService
     final userService = Provider.of<UserService>(context, listen: false);
 
     // Se o usuário for o dono (ex: editando seu próprio anúncio), usa o nome logado
@@ -157,7 +157,7 @@ class _DetailScreenState extends State<DetailScreen> {
     final theme = Theme.of(context);
     final listing = widget.listing; // Usar uma variável local para simplificar
 
-    // ✅ 1. Tenta decodificar a imagem Base64 para exibição
+    // Tenta decodificar a imagem Base64 para exibição
     Uint8List? imageBytes;
     if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty) {
       try {
@@ -203,7 +203,7 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
               child: imageBytes != null
                   ? Image.memory(
-                      // 🎯 CORREÇÃO: Usa Image.memory para exibir Base64
+                      //Usa Image.memory para exibir Base64
                       imageBytes,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Center(
@@ -228,7 +228,7 @@ class _DetailScreenState extends State<DetailScreen> {
             Text(widget.listing.title, style: theme.textTheme.headlineSmall),
             const SizedBox(height: 4),
 
-            // ✅ NOME DO ANUNCIANTE (Visualização prioritária)
+            // Nome do anunciante (exibido no detalhamento)
             Row(
               children: [
                 const Icon(
@@ -238,7 +238,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _advertiserName, // ✅ EXIBE O NOME ATUALIZADO
+                  _advertiserName, // exibe o nome do anunciante
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -275,7 +275,7 @@ class _DetailScreenState extends State<DetailScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ✅ NOVO: LOCALIZAÇÃO DO ANÚNCIO
+            //LOCALIZAÇÃO DO ANÚNCIO
             Row(
               children: [
                 const Icon(

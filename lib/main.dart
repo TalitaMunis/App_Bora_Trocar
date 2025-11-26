@@ -9,8 +9,8 @@ void main() async {
 
   await Hive.initFlutter();
   Hive.registerAdapter(FoodListingAdapter());
-  // Register User adapter so UserService can open a Box<User> safely.
-  // The generated `user.g.dart` contains `UserAdapter`.
+  // Registra o adapter de `User` para o `UserService` abrir um Box<User>.
+  // O arquivo gerado `user.g.dart` contém `UserAdapter`.
   Hive.registerAdapter(UserAdapter());
 
   // Abrir o box antes de rodar o app

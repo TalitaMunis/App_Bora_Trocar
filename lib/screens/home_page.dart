@@ -17,7 +17,7 @@ class _HomePageState extends State<HomePage> {
   // Estado para armazenar a ordenação visualmente
   String _currentSortDisplay = 'Vencimento (Mais Próximo)';
 
-  // ✅ NOVO: Adiciona um FocusNode para controlar o foco do teclado
+  // Adiciona um FocusNode para controlar o foco do teclado
   final FocusNode _searchFocusNode = FocusNode();
 
   // Opções de Categorias Mockadas (Deve refletir as opções de cadastro)
@@ -45,7 +45,7 @@ class _HomePageState extends State<HomePage> {
     adsService.setSearchTerm(_searchController.text);
   }
 
-  // ✅ NOVO MÉTODO: Ação ao clicar na lupa
+  // Ação ao clicar no ícone de busca
   void _onSearchIconTapped() {
     // 1. Garante que a busca seja acionada com o texto atual do campo
     _onSearchChanged();
@@ -58,7 +58,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
-    _searchFocusNode.dispose(); // ✅ DISPOSE DO FOCUSNODE
+    _searchFocusNode.dispose(); // libera o FocusNode
     super.dispose();
   }
 
@@ -76,7 +76,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // 🎯 LÓGICA DO FILTRO AVANÇADO (AGORA UM MODAL COMPLETO)
+  // Lógica do filtro avançado (modal)
   Future<void> _showFilterModal(
     BuildContext context,
     AdsService adsService,
@@ -147,16 +147,16 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: TextField(
                         controller: _searchController,
-                        focusNode: _searchFocusNode, // ✅ Usa o FocusNode
+                        focusNode:
+                            _searchFocusNode, // controla o foco do teclado
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           hintText: 'Buscar alimentos/Localidade',
                           hintStyle: const TextStyle(color: Colors.grey),
-                          // 🎯 CORREÇÃO: Usa IconButton em vez de Icon
+                          // PrefixIcon como botão acionável de busca
                           prefixIcon: IconButton(
                             icon: const Icon(Icons.search, color: Colors.grey),
-                            onPressed:
-                                _onSearchIconTapped, // ✅ Chama a ação de busca
+                            onPressed: _onSearchIconTapped,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(

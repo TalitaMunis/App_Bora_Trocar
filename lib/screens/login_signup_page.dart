@@ -183,12 +183,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                   decoration: const InputDecoration(
                     labelText: 'Telefone (Login/Cadastro)*',
                   ),
-                  keyboardType: TextInputType.phone, // ✅ Apenas para o teclado
+                  keyboardType: TextInputType.phone, // apenas para o teclado
                   validator: (value) {
                     if (value!.isEmpty) {
                       return 'Telefone é obrigatório.';
                     }
-                    // ✅ VALIDAÇÃO REAL: Verifica se contém apenas caracteres de telefone
+                    // validação: verifica se contém apenas caracteres de telefone
                     if (!phoneRegex.hasMatch(value)) {
                       return 'Use apenas números, parênteses ou hífens.';
                     }

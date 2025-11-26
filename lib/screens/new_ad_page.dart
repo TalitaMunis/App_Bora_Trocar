@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../theme/app_theme.dart';
 import '../services/ads_service.dart';
 import '../models/food_listing.dart';
 import '../services/image_service.dart';
 import '../services/user_service.dart';
-import 'package:intl/intl.dart'; // Mantido no arquivo
-import 'dart:convert'; // Necessário para Base64
+import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class NewAdPage extends StatefulWidget {
   final FoodListing? listingToEdit;
@@ -46,7 +45,7 @@ class _NewAdPageState extends State<NewAdPage> {
 
   // ESTADO DA IMAGEM
   String? _selectedImageUrl;
-  bool _isUploading = false; // Removido 'final'
+  bool _isUploading = false;
 
   // Opções de categorias mockadas
   final List<String> _categories = const [
@@ -67,7 +66,7 @@ class _NewAdPageState extends State<NewAdPage> {
     final isEditing = widget.listingToEdit != null;
     final listing = widget.listingToEdit;
 
-    // Divide a quantidade para edição (Ex: "2 pacotes" -> "2" e "pacotes")
+    // Divide a quantidade para edição
     if (isEditing && listing!.quantity.isNotEmpty) {
       final parts = listing.quantity.split(' ');
       _quantityNumber = parts.isNotEmpty ? parts[0] : '';
@@ -110,7 +109,7 @@ class _NewAdPageState extends State<NewAdPage> {
   // -------------------------------------------------------------------------
 
   Future<void> _pickImage() async {
-    // Mark uploading state immediately (synchronous, safe)
+    // Sinaliza início do upload de forma síncrona
     if (!mounted) return;
     setState(() {
       _isUploading = true;
@@ -118,7 +117,7 @@ class _NewAdPageState extends State<NewAdPage> {
 
     try {
       final newUrl = await _imageService.pickAndEncodeImage();
-      if (!mounted) return; // guard BuildContext/state after await
+      if (!mounted) return; // protege uso do contexto/estado após await
       setState(() {
         _selectedImageUrl = newUrl;
       });
@@ -156,7 +155,7 @@ class _NewAdPageState extends State<NewAdPage> {
       helpText: 'Selecione a Data de Validade',
     );
     if (picked != null && picked != _expiryDate) {
-      if (!mounted) return; // guard state/context after async gap
+      if (!mounted) return; // protege uso do contexto/estado após await
       setState(() {
         _expiryDate = picked;
       });
@@ -184,7 +183,7 @@ class _NewAdPageState extends State<NewAdPage> {
     }
     _formKey.currentState!.save();
 
-    // Validação Manual de Campos Críticos (TÍTULO e QUANTIDADE NUMÉRICA)
+    // Validação Manual de Campos Críticos
     if (_title.isEmpty || _quantityNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -208,7 +207,7 @@ class _NewAdPageState extends State<NewAdPage> {
         _selectedImageUrl ??
         'https://placehold.co/60x60/CCCCCC/FFFFFF?text=FOTO';
 
-    // 1. Constrói o objeto (Novo ou Atualizado)
+    // 1. Constrói o objeto (criação ou atualização)
     final listingToSave = FoodListing(
       id: isEditing ? widget.listingToEdit!.id : 0,
       title: _title,
@@ -253,7 +252,7 @@ class _NewAdPageState extends State<NewAdPage> {
   }
 
   // -------------------------------------------------------------------------
-  // ✅ Widget auxiliar para o campo de seleção de data (RESOLVE PROBLEMA DE ESCOPO)
+  // Widget auxiliar para o campo de seleção de data
   // -------------------------------------------------------------------------
   Widget _buildDatePickerField(BuildContext context) {
     return InkWell(
@@ -273,7 +272,7 @@ class _NewAdPageState extends State<NewAdPage> {
   }
 
   // -------------------------------------------------------------------------
-  // ✅ Widget Builder para o upload de imagem (RESOLVE PROBLEMA DE ESCOPO)
+  // Widget auxiliar para o upload de imagem
   // -------------------------------------------------------------------------
   Widget _buildImagePicker() {
     // Usamos Base64 decode para exibir a imagem real (se houver)
@@ -304,7 +303,7 @@ class _NewAdPageState extends State<NewAdPage> {
                   )
                 : imageBytes != null
                 ? Image.memory(
-                    // 🎯 USA Image.memory para exibir a imagem real
+                    // Usa Image.memory para exibir bytes de imagem
                     imageBytes,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Center(
@@ -379,7 +378,7 @@ class _NewAdPageState extends State<NewAdPage> {
               ),
               const SizedBox(height: 10),
 
-              _buildImagePicker(), // ✅ Chamada agora resolve o erro de escopo
+              _buildImagePicker(),
 
               const SizedBox(height: 16),
               // Localização Editável
@@ -470,9 +469,7 @@ class _NewAdPageState extends State<NewAdPage> {
               const SizedBox(height: 10),
 
               // Data de Validade (OBRIGATÓRIO)
-              _buildDatePickerField(
-                context,
-              ), // ✅ Chamada agora resolve o erro de escopo
+              _buildDatePickerField(context),
               const SizedBox(height: 16),
 
               // Quantidade com Dropdown de Unidades

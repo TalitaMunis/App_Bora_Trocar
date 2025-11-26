@@ -7,8 +7,8 @@ import '../models/user.dart';
 import '../services/user_service.dart';
 import 'edit_profile_page.dart';
 import 'login_signup_page.dart';
-import 'dart:convert'; // ✅ Necessário para base64Decode
-import 'dart:typed_data'; // ✅ Necessário para MemoryImage
+import 'dart:convert'; // necessário para base64Decode
+import 'dart:typed_data'; // necessário para MemoryImage
 
 // --- WIDGETS AUXILIARES ---
 
@@ -111,7 +111,7 @@ class ProfilePage extends StatelessWidget {
                 // --- 1. FOTO DO PERFIL ---
                 _buildProfilePhoto(
                   currentUser.photoUrl,
-                ), // ✅ Chama a lógica de exibição de Base64
+                ), // exibe foto decodificada em Base64 (se houver)
                 const SizedBox(height: 16),
 
                 // --- 2. NOME DO USUÁRIO ---
@@ -197,7 +197,7 @@ class ProfilePage extends StatelessWidget {
                 if (!isGuest)
                   TextButton(
                     onPressed: () async {
-                      // Capture values that rely on BuildContext before the async gap
+                      // Captura o ScaffoldMessenger antes do await
                       final userServiceAction = Provider.of<UserService>(
                         context,
                         listen: false,

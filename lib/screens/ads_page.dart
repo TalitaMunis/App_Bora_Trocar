@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // ✅ Importar Provider
-// Importa o serviço que contém os dados
+import 'package:provider/provider.dart';
 import '../services/ads_service.dart';
-// Importa o widget do card (que renderiza cada item)
 import '../widgets/simple_listing_card.dart';
 import 'detail_screen.dart';
 import '../theme/app_theme.dart';
@@ -28,7 +26,7 @@ class AdsPage extends StatelessWidget {
               child: CircularProgressIndicator(color: AppTheme.primaryColor),
             );
           }
-          // ✅ Pega a lista filtrada de anúncios do usuário
+          // Pega a lista filtrada de anúncios do usuário
           final userListings = adsService.userListings;
 
           if (userListings.isEmpty) {

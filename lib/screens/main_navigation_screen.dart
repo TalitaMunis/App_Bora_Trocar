@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 // 6. Importa todas as telas que irá gerenciar
 import 'home_page.dart';
-// A tela search_page.dart não é mais necessária (Busca está na Home)
-// ✅ ATENÇÃO: Ajustado para usar AdsPage
+// Usa AdsPage como tela de anúncios
 import 'ads_page.dart';
 import 'profile_page.dart';
 // Importa o tema para customizações visuais
@@ -19,17 +18,16 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  // ✅ Agora o índice vai de 0 a 2 (Home, Anúncios, Perfil)
   int _selectedIndex = 0;
 
-  // ✅ Lista APENAS das 3 telas que serão exibidas no corpo do Scaffold.
+  // Lista de telas exibidas no corpo do Scaffold
   static const List<Widget> _bodyScreens = <Widget>[
     HomePage(), // Índice 0: Home
     AdsPage(), // Índice 1: Anúncios
     ProfilePage(), // Índice 2: Perfil
   ];
 
-  // A lógica de navegação agora é simples e direta
+  // Função para atualizar o índice selecionado
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -38,11 +36,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   // Função auxiliar para verificar se o FAB deve ser exibido
   bool _shouldShowFab() {
-    // 🎯 O FAB aparece na Home (0) E em Meus Anúncios (1)
+    // O FAB aparece na Home (0) e em Meus Anúncios (1)
     return _selectedIndex == 0 || _selectedIndex == 1;
   }
 
-  // ✅ NOVO MÉTODO: Ação de voltar (muda para a Home)
+  // Ação de voltar para a Home (se não estiver nela)
   void _onBackTapped() {
     // Se não estiver na Home (índice 0), navega para a Home
     if (_selectedIndex != 0) {
@@ -56,12 +54,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final bool isHomeScreen = _selectedIndex == 0;
 
     return Scaffold(
-      // --- 1. AppBar (Ajustada para ter seta e não implicar volta) ---
+      // --- 1. AppBar ---
       appBar: AppBar(
         title: const Text('Bora Trocar!'),
         centerTitle: true,
-        backgroundColor:
-            AppTheme.primaryColor, // Corrigi para usar a cor primária
+        backgroundColor: AppTheme.primaryColor, // usa a cor primária do tema
         foregroundColor: Colors.white,
         elevation: 0,
 
@@ -70,16 +67,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           icon: Icon(
             isHomeScreen
                 ? Icons.home
-                : Icons
-                      .arrow_back, // Se for Home, pode ser um ícone de menu (opcional)
+                : Icons.arrow_back, // mostra seta de voltar se não for Home
             color: Colors.white,
           ),
           onPressed: isHomeScreen
               ? null
-              : _onBackTapped, // Se for Home, desativa (ou abre menu)
+              : _onBackTapped, // Se estiver na Home, desabilita o botão
         ),
 
-        // Remove a seta automática, já que estamos implementando a nossa
         automaticallyImplyLeading: false,
       ),
 
@@ -87,7 +82,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: _bodyScreens.elementAt(_selectedIndex),
 
       // --- 3. Floating Action Button (FAB) ---
-      // ✅ CORREÇÃO: O FAB aparece se o índice for 0 (Home) OU 1 (Anúncios)
+      // FAB aparece quando aplicável (Home ou Anúncios)
       floatingActionButton: _shouldShowFab()
           ? FloatingActionButton(
               onPressed: () {

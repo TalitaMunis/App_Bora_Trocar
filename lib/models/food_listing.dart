@@ -29,10 +29,10 @@ class FoodListing {
   final String quantity;
 
   @HiveField(8)
-  final String? category; // ✅ NOVO CAMPO: Categoria
+  final String? category; // campo opcional: categoria
 
   @HiveField(9)
-  final String creatorUserId; // ✅ NOVO CAMPO: ID do criador
+  final String creatorUserId; // ID do criador
 
   @HiveField(11)
   final String location;
@@ -49,8 +49,8 @@ class FoodListing {
     required this.description,
     required this.contactInfo,
     required this.quantity,
-    this.category, // ✅ Adicionado ao construtor
-    required this.creatorUserId, // ✅ Requerido no construtor
+    this.category,
+    required this.creatorUserId,
     required this.location,
     this.isMockUserOwner = false,
   });
@@ -64,7 +64,7 @@ class FoodListing {
     String? description,
     String? contactInfo,
     String? quantity,
-    String? category, // ✅ Adicionado ao copyWith
+    String? category,
     String? creatorUserId,
     bool? isMockUserOwner,
     String? location,
@@ -79,7 +79,7 @@ class FoodListing {
       description: description ?? this.description,
       contactInfo: contactInfo ?? this.contactInfo,
       quantity: quantity ?? this.quantity,
-      category: category ?? this.category, // ✅ Usado no copyWith
+      category: category ?? this.category,
       creatorUserId: creatorUserId ?? this.creatorUserId,
       isMockUserOwner: isMockUserOwner ?? this.isMockUserOwner,
       location: location ?? this.location,
@@ -87,7 +87,7 @@ class FoodListing {
   }
 }
 
-// --- DADOS MOCKADOS (RE-INSERIDOS AQUI) ---
+// --- DADOS MOCKADOS
 const String _paoIntegralUrl =
     'https://placehold.co/600x400/8B4513/FFFFFF?text=P%C3%A3o+Integral';
 const String _leiteUrl =
@@ -107,7 +107,7 @@ final List<FoodListing> mockListings = [
     expiryDate: DateTime.now().add(const Duration(days: 1)),
     contactInfo: '5511987654321',
     imageUrl: _paoIntegralUrl,
-    category: 'Pães e Massas', // ✅ Novo Campo
+    category: 'Pães e Massas',
     creatorUserId: 'mock_user_1',
     isMockUserOwner: true,
     location: 'São Paulo, SP',
@@ -121,7 +121,7 @@ final List<FoodListing> mockListings = [
     expiryDate: DateTime.now(),
     contactInfo: '5511987654321',
     imageUrl: _leiteUrl,
-    category: 'Laticínios', // ✅ Novo Campo
+    category: 'Laticínios',
     creatorUserId: 'mock_user_2',
     isMockUserOwner: false,
     location: 'Rio de Janeiro, RJ',
@@ -135,7 +135,7 @@ final List<FoodListing> mockListings = [
     expiryDate: DateTime.now().add(const Duration(days: 5)),
     contactInfo: '5511987654321',
     imageUrl: _frangoUrl,
-    category: 'Carnes e Proteínas', // ✅ Novo Campo
+    category: 'Carnes e Proteínas',
     creatorUserId: 'mock_user_3',
     isMockUserOwner: true,
     location: 'Belo Horizonte, MG',
@@ -149,7 +149,7 @@ final List<FoodListing> mockListings = [
     expiryDate: DateTime.now().add(const Duration(days: 3)),
     contactInfo: '5511987654321',
     imageUrl: _mangaUrl,
-    category: 'Frutas e Vegetais', // ✅ Novo Campo
+    category: 'Frutas e Vegetais',
     creatorUserId: 'mock_user_4',
     isMockUserOwner: false,
     location: 'Salvador, BA',
